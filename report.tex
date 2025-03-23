@@ -1,0 +1,396 @@
+%!TEX program = xelatex
+% 完整编译: xelatex -> biber/bibtex -> xelatex -> xelatex
+\documentclass[lang=cn,a4paper,newtx]{elegantpaper}
+\usepackage{algorithm}
+\usepackage{algorithmicx}
+\usepackage{algpseudocode}
+\usepackage{subfig}
+\usepackage{longtable}
+\usepackage{lipsum}
+% \usepackage[title]{appendix}
+% \usepackage{subfigure}
+% \usepackage{subfloat}
+\renewcommand{\listtablename}{表格目录}
+\renewcommand{\appendixname}{附录~\Alph{section}}
+\title{计算机组织与结构II：CPU设计文档}
+\author{李勃璘 \\ 吴健雄学院}
+
+\version{1.0}
+\date{\zhdate{2025/3/22}}
+
+% 本文档命令
+\usepackage{array}
+\newcommand{\ccr}[1]{\makecell{{\color{#1}\rule{1cm}{1cm}}}}
+\addbibresource[location=local]{reference.bib} % 参考文献，不要删除
+
+\begin{document}
+
+\maketitle
+\thispagestyle{empty}
+\begin{abstract}
+本设计文档详细阐述了一款基于 五级流水线 的 CPU 体系结构及其 Verilog 实现。CPU 采用 取指（IF）、译码（ID）、执行（EX）、访存（MEM）、写回（WB） 五级流水线，以提高指令执行效率。文档首先介绍了 CPU 的总体架构，包括 时钟与复位机制、关键存储单元、内部数据通路与控制信号，并详细说明了 指令集架构 及其编码格式。随后，针对流水线执行过程中可能出现的 数据冒险、控制冒险、流水线暂停 等问题，提出了 旁路（Forwarding）、分支预测（Branch Prediction）、冒险检测（Hazard Detection） 等优化方案，并给出了相应的 Verilog 设计。最后，文档分析了 CPU 与内存、总线及外部控制信号 的交互方式，并探讨了 Verilog 在 FPGA 上的实现方案。该设计通过流水线优化与高效控制信号管理，提升了 CPU 的吞吐率，为后续硬件优化和扩展提供了良好的基础。
+\end{abstract}
+\vspace{1cm}
+
+\textbf{版本更新记录：}
+
+\begin{longtable*}{|c|c|p{10cm}|}
+  \hline
+  \textbf{版本号} & \textbf{日期} & \textbf{更新内容} \\
+  \hline
+  \endfirsthead
+
+  \hline
+  \textbf{版本号} & \textbf{日期} & \textbf{更新内容} \\
+  \hline
+  \endhead
+
+  v1.0 & 2025-03-22 & 初始版本，包含基本 CPU 设计框架，流水线结构，Verilog 实现。 \\
+  \hline
+  v1.1 & 2025-03-25 & 修正部分时序问题，优化 Forwarding 和 Hazard Detection。 \\
+  \hline
+  v1.2 & 2025-03-28 & 增加 FPGA 实现部分，优化数据路径，改进分支预测机制。 \\
+  \hline
+  v1.3 & 2025-04-01 & 修正了一些公式错误，完善了性能分析和实验数据记录。 \\
+  \hline
+
+\end{longtable*}
+
+
+\newpage
+\pagenumbering{roman}
+\tableofcontents
+\newpage
+\listoftables
+\newpage
+\pagenumbering{arabic}
+\section{概述}
+\lipsum[1]\footnote{手搓CPU是人类文明的伟大工程 —— 沃兹基硕德}
+
+
+\section{体系结构设计}
+\subsection{总体架构}
+CPU由控制单元（CU），逻辑运算单元（ALU），内存（Memory）和寄存器组（Registers）组成，除内存以外，其余单元由被CU生成的控制信号控制的数据通路（Data Path）连接。另外，MAR和MBR分别还和地址总线、数据总线相连接，用于与内存交互。控制单元和内存都和控制总线相连接，用于与外部控制信号交互。
+
+为简单起见，CPU的计算全部为\textbf{16位定点有符号数计算}。
+
+\textcolor{blue}{这里需要一张图！！！}
+
+
+
+
+\subsection{指令集架构}
+指令集是指CPU能够对数据进行的所有操作的集合。每一条指令都可以被解释为寄存器与寄存器、内存、I/O端口之间的交互。交互方式由CU中的微指令（Micro-operation）给出，且每一条微指令都需要一个时钟执行（如不进行优化）。
+\subsubsection{位宽设计}
+地址段长为\textbf{8}位，指令码（Opcode）宽度为\textbf{8}位。因此，每一条指令的位宽为\textbf{16}位。
+\subsubsection{寻址方式}
+寻址方式指对地址段数据的解释方式。寻址方式由对应指令指定，支持表~\ref{tab:ISA:addressingmode}~中的全部寻址方式。由于给定的指令集高四位均空闲，使用最高位存储支持的寻址方式。
+\begin{longtable}{c c c}
+  \caption{指令集支持的寻址方式} \label{tab:ISA:addressingmode} \\
+  \toprule
+  寻址方式  & 描述 & 最高位\\
+  \midrule
+  \endfirsthead
+  
+  \caption[]{（续表）指令集支持的寻址方式} \\
+  \toprule
+  寻址方式  & 描述 & 最高位\\
+  \midrule
+  \endhead
+  
+  \midrule
+  \multicolumn{3}{r}{续下页} \\
+  \midrule
+  \endfoot
+  
+  \bottomrule
+  \endlastfoot
+  
+  立即数寻址   &  地址字段是操作数本身，数据为补码格式  & 0\\
+  直接寻址 &  地址字段为存放操作数的地址    & 1\\
+\end{longtable}
+
+\subsubsection{指令集支持的指令}
+指令集共支持13条不同的指令，列于表~\ref{tab:ISA:instructions}。每一条指令包含一个指令码，使用16进制格式存储。指令码的最高位为0时，寻址方式为立即数寻址；指令码的最高位为1时，寻址方式为直接寻址（此时HEX高位为8）。
+
+\begin{longtable}{c c c}
+  \caption{指令集包含指令及功能（立即数寻址下）} \label{tab:ISA:instructions} \\
+  \toprule
+  助记符  & 指令码(HEX) & 描述 \\
+  \midrule
+  \endfirsthead
+  
+  \caption[]{（续表）指令集包含指令及功能（立即数寻址下）} \\
+  \toprule
+  助记符  & 指令码(HEX) & 描述 \\
+  \midrule
+  \endhead
+  
+  \midrule
+  \multicolumn{3}{r}{续下页} \\
+  \midrule
+  \endfoot
+  
+  \bottomrule
+  \endlastfoot
+  
+  STORE X &  01   & [X] $\leftarrow$ ACC  \\
+  LOAD X  & 02    & ACC $\leftarrow$ [X]  \\
+  ADD X   & 03    & ACC $\leftarrow$ ACC + [X]\\
+  SUB X   & 04    & ACC $\leftarrow$ ACC - [X]\\
+  JGZ X   & 05    & ACC $\geq$ 0 ? PC $\leftarrow$ X : PC $\leftarrow$ PC + 1\\
+  JMP X   & 06    & PC $\leftarrow$ X\\
+  HALT    & 07    & Stop\\
+  MPY X   & 08    & MR, ACC $\leftarrow$ ACC * [X]，MR用于存储高16位 \\
+  AND X   & 10    & ACC $\leftarrow$ ACC \& [X]\\
+  OR X    & 11    & ACC $\leftarrow$ ACC | [X]\\
+  NOT X   & 12    & ACC $\leftarrow$ \~[X] \\
+  SHIFTR  & 13    & ACC $\leftarrow$ ACC $>>>$ 1，算术右移\\
+  SHIFTL  & 14    & ACC $\leftarrow$ ACC $<<<$ 1，算术左移\\
+\end{longtable}
+
+\subsection{CPU内部寄存器}
+该部分描述CPU内部寄存器的含义、存储格式和数据被解释为的格式。这些寄存器通过CPU的内部数据通路相连接。寄存器操作是CPU快速操作的核心。
+
+\begin{longtable}{c c c c c c}
+  \caption{CPU内部寄存器的含义、总存储条数、单位位宽和数据解释格式} \label{tab:CPU:datawidth} \\
+  \toprule
+  寄存器 & 含义 & 条数 & 位宽 & 数据解释格式 & 归属模块\\
+  \midrule
+  \endfirsthead
+
+  \caption[]{（续表）CPU内部寄存器的含义、总存储条数、单位位宽和数据解释格式} \\
+  \toprule
+  寄存器 & 含义 & 条数 & 位宽 & 数据解释格式 & 归属模块\\
+  \midrule
+  \endhead
+
+  \midrule
+  \multicolumn{6}{r}{续下页} \\
+  \midrule
+  \endfoot
+
+  \bottomrule
+  \endlastfoot
+
+  PC   & 程序计数器，存储当前指令地址             & 1  & 8   & 指令码（Opcode） & /\\
+  MAR  & 内存地址寄存器，存储要访问的内存地址     & 1  & 8   & 地址码（Address）& /\\
+  MBR  & 内存缓冲寄存器，存储从内存读取或写入的数据 & 1  & 16  & 二进制补码 & /\\
+  IR   & 指令寄存器，存储当前正在执行的指令       & 1  & 8   & 指令码（Opcode）& /\\
+  BR   & 通用寄存器，存储 ALU 计算中间结果        & 1  & 16  & 二进制补码 & ALU\\
+  ACC  & 累加寄存器，存储 ALU 运算结果           & 1  & 16  & 二进制补码 & ALU\\
+  MR   & 乘法寄存器，存储 ALU 乘法高 16 位       & 1  & 16  & 二进制补码 & ALU\\
+  CM   & 控制存储器，存储微指令控制信号         & 未定 & 14  & 控制信号 & CU\\
+  CAR  & 控制地址寄存器，指向当前执行的微指令   & 1  & 4   & CM中的条数下标 & CU\\
+  CBR  & 控制缓冲寄存器，存储当前微指令的控制信号 & 1  & 14  & 控制信号 & CU\\
+\end{longtable}
+
+除上述寄存器以外，ALU进行运算时还会更改\textbf{状态寄存器}（Flags），用于CU进行条件判断。例如，JGZ命令需要判断上一步的运算结果是否是0，CU可以直接通过状态寄存器中的ZF（Zero Flag）寄存器直接进行判断。本设计中使用的所有状态寄存器见表~\ref{tab:CPU:status}，它们都直接连向CU，通路不受控制信号的控制。
+
+\begin{longtable}{c c c}
+  \caption{状态寄存器列表} \label{tab:CPU:status} \\
+  \toprule
+  寄存器 & 全称 & 行为 \\ 
+  \midrule
+  \endfirsthead
+
+  \caption[]{（续表）状态寄存器列表} \\
+  \toprule
+  寄存器 & 全称 & 行为\\
+  \midrule
+  \endhead
+
+  \midrule
+  \multicolumn{3}{r}{续下页} \\
+  \midrule
+  \endfoot
+
+  \bottomrule
+  \endlastfoot
+
+  ZF   & Zero Flag             & ALU运算结果（通常为ACC）为0时置1\\
+  CF  & Carry Flag     & 存储算术移位移出的比特（由于有符号数不存储进位）\\
+  OF  & Overflow Flag &  ALU运算结果发生溢出时置1\\
+  NF  & Negative Flag &  ALU运算结果为负数时置1\\
+\end{longtable}
+
+\subsection{CPU内部数据通路、控制信号与微操作指令（Micro-Operations）}
+\subsubsection{数据通路与控制信号}
+关键存储单元之间通过数据通路进行连接。每条数据通路都由一位控制信号控制。控制信号为1时表示通路打开，数据沿指定流向进行传输。该CPU共有\textbf{14}位控制信号。
+\begin{longtable}{c c c}
+  \caption{数据通路与控制信号一览} \label{tab:CPU:DataPath} \\
+  \toprule
+  控制信号位 & 源寄存器/单元  & 目的寄存器/单元  \\
+  \midrule
+  \endfirsthead
+
+  \caption[]{（续表）数据通路与控制信号一览} \\
+  \toprule
+  控制信号位 & 源寄存器/单元  & 目的寄存器/单元  \\
+  \midrule
+  \endhead
+
+  \midrule
+  \multicolumn{3}{r}{续下页} \\
+  \midrule
+  \endfoot
+
+  \bottomrule
+  \endlastfoot
+
+  0  & MAR   & 地址总线  \\
+  1  & PC    & MBR  \\
+  2  & PC    & MAR  \\
+  3  & MBR   & PC  \\
+  4  & MBR   & IR  \\
+  5  & 数据总线 & MBR  \\
+  6  & MBR   & ALU（待处理数据） \\
+  7  & ACC   & ALU  \\
+  8  & MBR   & MAR  \\
+  9  & ALU   & ACC  \\
+  10 & MBR   & ACC  \\
+  11 & ACC   & MBR  \\
+  12 & MBR   & 数据总线  \\
+  13 & IR    & CU  \\
+\end{longtable}
+
+\subsubsection{微操作指令（Micro-Operations）}
+为了实现指令集中所有指令，需要将指令集的指令分解为多步微操作指令。在本设计中，采用水平微指令（Horizontal Micro-operation）设计。
+\subsection{内存（RAM）}
+内存（RAM）存储指令集和CPU保存的数据。内存的大小为 512 Byte，每条存入内存的数据位宽为16，共能存入256条数据。其中，内存地址0到内存地址12预留为指令集。为了节省内存，不同寻址方式下的相同指令不占用两条内存，由CU改变指令的Opcode。
+
+内存支持总线读写，并受三条总线控制：地址总线、数据总线和控制总线。\textbf{控制总线}中的外部控制信号决定在这个周期中内存的读/写状态，是否向数据总线写入，同步时序等功能。CPU与内存（RAM）通过两条总线交互，分别为\textbf{地址总线}和\textbf{数据总线}。内存通过读取地址总线决定写入内存中的地址，通过读取数据总线决定写入指定地址中的数据。关于总线的具体配置见~\ref{sec:ExternalControl}。
+
+\subsection{总线与外部控制信号}\label{sec:ExternalControl}
+
+\subsubsection{地址总线}
+地址总线为\textbf{8}位单向总线，提供CPU（即MAR）到内存的地址传送通路。由于其为单向总线，仅需内存侧读使能信号与CPU侧MAR的控制信号控制即可，无需复用。
+\subsubsection{数据总线}
+数据总线为\textbf{16}位双向总线，提供CPU（即MBR）与内存的双向数据通路。数据总线采用分时复用的方式进行设计。\textcolor{red}{如果MEM和WB在同一时钟下，会出现流水线冲突，需要考虑是否引入旁路。}
+\subsubsection{控制总线与外部控制信号}
+外部控制信号是一组单比特信号，通过控制总线控制CU和RAM的行为，它们受流水线周期的控制置0或置1。CU和RAM通过内部映射决定监视哪些位的信号。外部控制信号主要包括以下功能：
+\begin{itemize}
+  \item RAM读写控制；
+  \item 流水线控制信号。
+\end{itemize}
+
+所有外部控制信号列于表~\ref{tab:CPU:ExternalControl}。
+\begin{longtable}{c c c c c}
+  \caption{外部控制信号一览} \label{tab:CPU:ExternalControl} \\
+  \toprule
+  控制信号位/类型 & 别名  & 有效模块 & 高电平时作用 & 低电平时作用\\
+  \midrule
+  \endfirsthead
+
+  \caption[]{（续表）外部控制信号一览} \\
+  \toprule
+  控制信号位/类型 & 别名  & 有效模块 & 高电平时作用 & 低电平时作用 \\
+  \midrule
+  \endhead
+
+  \midrule
+  \multicolumn{5}{r}{续下页} \\
+  \midrule
+  \endfoot
+
+  \bottomrule
+  \endlastfoot
+  \textbf{RAM读写控制}\\
+  \hline
+  0  & MemoryWrite    & RAM  & RAM写数据总线 & 无\\
+  1  & MemoryRead     & RAM  & RAM读数据总线和地址总线 & 无\\
+  \hline
+  \textbf{分支预测} \\
+  \hline
+  2   & BranchTaken    & CU   & 执行Branch     & 顺序执行 \\
+  3   & Jump            & CU  & 执行Jump        & 顺序执行 \\
+  \hline
+  \textbf{流水线控制}  \\
+  \hline
+  4   & PipelineStall & CU    & 流水线暂停（如数据冒险、存储器访问延迟） & 无 \\
+  5   & PipelineFlush & CU    & 流水线清空（如错误预测、异常发生）      & 无 \\
+
+\end{longtable}
+\subsection{流水线架构与优化策略}
+\subsubsection{总体架构}
+为了加速CPU的指令执行速度，采用\textbf{5级同步流水线}完成CPU执行指令的全流程。分别为：取指令（IF），指令译码（ID），指令执行（EX），内存访问（MEM）和写回（WB）五个阶段。流水线的五个阶段如下所示。
+$$
+  \text{IF} \rightarrow \text{ID} \rightarrow \text{EX} \rightarrow \text{MEM} \rightarrow \text{WB}
+$$
+
+对于本设计的指令集，仅LOAD和STORE指令涉及内存访问（MEM），STORE指令不需要写回（WB）阶段，因为内存写入在MEM阶段已经完成。
+\subsubsection{流水线各阶段工作}
+
+\subsubsection{流水线优化：分支预测}
+在本设计中，采用1比特分支预测进行流水线优化。分支预测的控制信号由\textbf{控制总线}输入到CU中。分支预测的步骤如算法~\ref{alg:1bitBP}。
+
+\begin{algorithm}[htbp]
+  \caption{1-bit 分支预测}
+  \label{alg:1bitBP}
+  \begin{algorithmic}[1]
+  \State \textbf{Note:} 使用 1-bit 预测器预测分支是否跳转
+  \State \textbf{Input:} $PC, BranchTaken$
+  \State \textbf{Output:} $NextPC$
+  \State \textbf{Internal Registers:} $PredictorBit, BranchTarget$
+
+  \Procedure{Branch Prediction}{}
+      \If {$PredictorBit == 1$}
+          \State $PredictedTaken \gets \text{True}$
+          \State $NextPC \gets BranchTarget$
+      \Else
+          \State $PredictedTaken \gets \text{False}$
+          \State $NextPC \gets PC + 2$
+      \EndIf
+  \EndProcedure
+
+  \Procedure{Branch Resolution}{}
+      \If {$BranchTaken \neq PredictedTaken$}  \Comment{预测错误}
+          \State $Flush \gets 1$  \Comment{清空错误指令}
+          \State $NextPC \gets \textbf{if } BranchTaken \textbf{ then } BranchTarget \textbf{ else } PC + 2$
+      \EndIf
+      \State \textbf{Update Predictor:}
+      \State $PredictorBit \gets BranchTaken$  \Comment{更新 1-bit 预测器}
+  \EndProcedure
+  \end{algorithmic}
+\end{algorithm}
+
+
+% \subsubsection{流水线优化}\label{sec:streamline}
+% 流水线设计下会出现内存读写冲突等，需要实现冲突现象的检测模块。同时，如果没有流水线优化策略，则每次访问冲突都需要清空流水线，这会降低流水线的运行效率。
+
+\section{模块设计}
+\subsection{时钟与复位}
+CPU由\textbf{全局同步时钟}控制，所有控制逻辑与计算逻辑全部在时钟上升沿进行。CPU设有\textbf{全局异步复位}信号，低电平有效。当异步复位时，内存中除指令集数据以外所有数据清空，所有寄存器清空，控制信号全部归为断开（0）。
+\subsection{ALU}
+
+\subsection{CU}
+参考表~\ref{tab:CPU:DataPath}~，确定指令集中的每一条指令对应的控制信号，并存储到CU的内部寄存器中，即可完成CU的主要功能设计。
+
+
+\subsection{Memory}
+
+
+
+% \subsection{分支预测}
+
+\section{仿真验证}
+\subsection{时延分析}
+% 定义一个打印周期为从POC重置自身$SR_7$到一轮打印结束所经历的时钟上升沿个数。那么：
+% \begin{enumerate}
+%     \item 由POC重置到PROCESSOR置零$SR_7$，使用6个时钟，分别为读取POC信号的一个时钟和状态机的五个时钟；\footnote{中断模式较查询模式少用一个时钟。因为中断信号由组合逻辑生成，中断模式下PROCESSOR可立刻读取中断信号，无需读取POC信号。}
+%     \item POC此时开始与打印机进行交互。写入\texttt{o\_tr}和\texttt{o\_pd}共使用1个时钟，\texttt{o\_tr}信号持续1个时钟；
+%     \item 打印机收到信号后，耗时8个时钟打印数据；
+%     \item 打印结束后，POC重置$SR_7$，使用1个时钟。
+% \end{enumerate}
+% 故一个打印周期为17个时钟（查询模式）或16个时钟（中断模式）。
+\subsection{并行计算加速比（Speed-up Factor）分析}
+\subsection{激励设置}
+
+\section{FPGA实现}
+\newpage
+\addappheadtotoc
+\begin{appendices}
+  \section{完整设计代码}
+\end{appendices}
+
+\end{document}
