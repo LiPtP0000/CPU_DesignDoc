@@ -47,12 +47,7 @@
 
   v1.0 & 2025-03-22 & 初始版本，包含基本 CPU 设计框架，流水线结构，Verilog 实现。 \\
   \hline
-  v1.1 & 2025-03-25 & 修正部分时序问题，优化 Forwarding 和 Hazard Detection。 \\
-  \hline
-  v1.2 & 2025-03-28 & 增加 FPGA 实现部分，优化数据路径，改进分支预测机制。 \\
-  \hline
-  v1.3 & 2025-04-01 & 修正了一些公式错误，完善了性能分析和实验数据记录。 \\
-  \hline
+  v1.1 & 2025-03-29 & 修改 \\
 
 \end{longtable*}
 
@@ -213,6 +208,7 @@ CPU由控制单元（CU），逻辑运算单元（ALU），内存（Memory）和
   OF  & Overflow Flag &  ALU运算结果发生溢出时置1\\
   NF  & Negative Flag &  ALU运算结果为负数时置1\\
 \end{longtable}
+\subsection{算术逻辑单元ALU}
 
 \subsection{CPU内部数据通路、控制信号与微操作指令（Micro-Operations）}
 \subsubsection{数据通路与控制信号}
@@ -256,6 +252,9 @@ CPU由控制单元（CU），逻辑运算单元（ALU），内存（Memory）和
 
 \subsubsection{微操作指令（Micro-Operations）}
 为了实现指令集中所有指令，需要将指令集的指令分解为多步微操作指令。在本设计中，采用水平微指令（Horizontal Micro-operation）设计。
+
+
+
 \subsection{内存（RAM）}
 内存（RAM）存储指令集和CPU保存的数据。内存的大小为 512 Byte，每条存入内存的数据位宽为16，共能存入256条数据。其中，内存地址0到内存地址12预留为指令集。为了节省内存，不同寻址方式下的相同指令不占用两条内存，由CU改变指令的Opcode。
 
@@ -313,14 +312,107 @@ CPU由控制单元（CU），逻辑运算单元（ALU），内存（Memory）和
 \end{longtable}
 \subsection{流水线架构与优化策略}
 \subsubsection{总体架构}
-为了加速CPU的指令执行速度，采用\textbf{5级同步流水线}完成CPU执行指令的全流程。分别为：取指令（IF），指令译码（ID），指令执行（EX），内存访问（MEM）和写回（WB）五个阶段。流水线的五个阶段如下所示。
+为了加速CPU的指令执行速度，采用\textbf{5级同步流水线}完成CPU执行指令的全流程。分别为：取指令（IF），指令译码（ID），指令执行（EX），内存访问（MEM）和写回寄存器（WB）五个阶段。流水线的五个阶段如下所示。
 $$
   \text{IF} \rightarrow \text{ID} \rightarrow \text{EX} \rightarrow \text{MEM} \rightarrow \text{WB}
 $$
 
-对于本设计的指令集，仅LOAD和STORE指令涉及内存访问（MEM），STORE指令不需要写回（WB）阶段，因为内存写入在MEM阶段已经完成。
-\subsubsection{流水线各阶段工作}
+流水线各阶段的主要工作如下：
+\begin{itemize}
+  \item \textbf{IF(Instruction Fetch):}从指令存储器中取出指令，同时确定下一条指令地址（指针指向下一条指令）；
+  \item \textbf{ID(Instruction Decode):}翻译指令，同时让计算机得出要使用的寄存器，或者让立即数进行拓展（方便后续指令执行），亦或者（转移指令）是给出转移目的寄存器与转移条件；
+  \item \textbf{EX(Execution):}按照微操作指令指示打开数据通路。
+  \item \textbf{MEM(Memory):}若为\texttt{LOAD/STORE}指令，这个阶段就要访问存储器。此外，指令从EX向下执行到WB阶段。另外，在这个阶段还要判定是否有异常要处理，如果有，那么就清除流水线，然后转移到异常处理例程入口地址处继续执行。
+  \item \textbf{WB(Write Back):}将运算结果保存到目标寄存器。
+\end{itemize}
 
+\subsubsection{指令集各流水线阶段的微操作指令}
+\begin{longtable}{c c c c c c c}
+  \caption{指令微操作与控制信号（五级流水线）} \label{tab:CPU:PipelineMicroOps} \\
+  \toprule
+  指令 & 时钟周期 & IF阶段 & ID阶段 & EX阶段 & MEM阶段 & WB阶段 \\
+  \midrule
+  \endfirsthead
+
+  \caption[]{（续表）指令集微操作指令（五级流水线）} \\
+  \toprule
+  指令 & 时钟周期 & IF阶段 & ID阶段 & EX阶段 & MEM阶段 & WB阶段 \\
+  \midrule
+  \endhead
+
+  \midrule
+  \multicolumn{7}{r}{续下页} \\
+  \midrule
+  \endfoot
+
+  \bottomrule
+  \endlastfoot
+
+  \multicolumn{7}{l}{\textbf{STORE X (01)}} \\
+  1 & T1 & PC->MAR & 取指令 & 译码 & - & - \\
+  2 & T2 & 读取指令 & PC+1 & 取X地址->MAR & - & - \\
+  3 & T3 & 读取X数据->MBR & - & - & MBR->内存 & - \\
+  4 & T4 & - & - & - & - & 结束 \\
+
+  \multicolumn{7}{l}{\textbf{LOAD X (02)}} \\
+  1 & T1 & PC->MAR & 取指令 & 译码 & - & - \\
+  2 & T2 & 读取指令 & PC+1 & 取X地址->MAR & - & - \\
+  3 & T3 & 读取X数据->MBR & - & - & - & MBR->ACC \\
+  4 & T4 & - & - & - & - & 结束 \\
+
+  \multicolumn{7}{l}{\textbf{ADD X (03)}} \\
+  1 & T1 & PC->MAR & 取指令 & 译码 & - & - \\
+  2 & T2 & 读取指令 & PC+1 & 取X地址->MAR & - & - \\
+  3 & T3 & 读取X数据->MBR & - & - & - & - \\
+  4 & T4 & - & - & MBR+ACC->ALU & - & - \\
+  5 & T5 & - & - & - & - & ALU->ACC \\
+
+  \multicolumn{7}{l}{\textbf{SUB X (04)}} \\
+  1 & T1 & PC->MAR & 取指令 & 译码 & - & - \\
+  2 & T2 & 读取指令 & PC+1 & 取X地址->MAR & - & - \\
+  3 & T3 & 读取X数据->MBR & - & - & - & - \\
+  4 & T4 & - & - & ACC-MBR->ALU & - & - \\
+  5 & T5 & - & - & - & - & ALU->ACC \\
+
+  \multicolumn{7}{l}{\textbf{JGZ X (05)}} \\
+  1 & T1 & PC->MAR & 取指令 & 译码 & - & - \\
+  2 & T2 & 读取指令 & PC+1 & 判断ACC>=0 & - & - \\
+  3 & T3 & - & - & - & 更新PC & - \\
+
+  \multicolumn{7}{l}{\textbf{JMP X (06)}} \\
+  1 & T1 & PC->MAR & 取指令 & 译码 & - & - \\
+  2 & T2 & 读取指令 & PC+1 & X->PC & - & - \\
+
+  \multicolumn{7}{l}{\textbf{HALT (07)}} \\
+  1 & T1 & CPU 停止 & - & - & - & - \\
+
+  \multicolumn{7}{l}{\textbf{MPY X (08)}} \\
+  1 & T1 & PC->MAR & 取指令 & 译码 & - & - \\
+  2 & T2 & 读取指令 & PC+1 & 取X地址->MAR & - & - \\
+  3 & T3 & 读取X数据->MBR & - & - & - & - \\
+  4 & T4 & - & - & ACC*MBR->ALU & - & - \\
+  5 & T5 & - & - & - & - & ALU->ACC,MR \\
+
+  \multicolumn{7}{l}{\textbf{AND X (10)}} \\
+  1 & T1 & PC->MAR & 取指令 & 译码 & - & - \\
+  2 & T2 & 读取指令 & PC+1 & 取X地址->MAR & - & - \\
+  3 & T3 & 读取X数据->MBR & - & - & - & - \\
+  4 & T4 & - & - & ACC & MBR->ALU & - \\
+  5 & T5 & - & - & - & - & ALU->ACC \\
+
+  \multicolumn{7}{l}{\textbf{SHIFTR (13)}} \\
+  1 & T1 & PC->MAR & 取指令 & 译码 & - & - \\
+  2 & T2 & 读取指令 & PC+1 & - & - & - \\
+  3 & T3 & - & - & (ACC>>>1)->ALU & - & - \\
+  4 & T4 & - & - & - & - & ALU->ACC \\
+
+  \multicolumn{7}{l}{\textbf{SHIFTL (14)}} \\
+  1 & T1 & PC->MAR & 取指令 & 译码 & - & - \\
+  2 & T2 & 读取指令 & PC+1 & - & - & - \\
+  3 & T3 & - & - & (ACC<<<1)->ALU & - & - \\
+  4 & T4 & - & - & - & - & ALU->ACC \\
+
+\end{longtable}
 \subsubsection{流水线优化：分支预测}
 在本设计中，采用1比特分支预测进行流水线优化。分支预测的控制信号由\textbf{控制总线}输入到CU中。分支预测的步骤如算法~\ref{alg:1bitBP}。
 
