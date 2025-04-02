@@ -209,9 +209,50 @@ CPU由控制单元（CU），逻辑运算单元（ALU），内存（Memory）和
   NF  & Negative Flag &  ALU运算结果为负数时置1\\
 \end{longtable}
 \subsection{算术逻辑单元ALU}
+算术逻辑单元ALU负责进行大部分CPU内的计算\footnote{PC自增与PC赋值在设计中不引入ALU。}。它通过MBR获取运算的第二个数据，计算方式受状态寄存器影响，计算结果存入ACC寄存器中\footnote{认为专用于乘法的MR寄存器是一个ALU内部寄存器。当存储乘法结果时，MR先传入ACC寄存器，再传入MBR。}。
+
+
+\subsubsection{ALU的数据通路}
+\begin{longtable}{c c c}
+  \caption{ALU的数据通路} \label{tab:ALU:DataPath} \\
+  \toprule
+  源寄存器 & 目标寄存器 & 传递的数据 \\ 
+  \midrule
+  \endfirsthead
+
+  \caption[]{（续表）ALU的数据通路} \\
+  \toprule
+  源寄存器 & 目标寄存器 & 传递的数据\\
+  \midrule
+  \endhead
+
+  \midrule
+  \multicolumn{3}{r}{续下页} \\
+  \midrule
+  \endfoot
+
+  \bottomrule
+  \endlastfoot
+
+     &              & \\
+    &      & \\
+    & &  \\
+    &  & \\
+\end{longtable}
+\subsubsection{ALU的内部控制信号}
+ALU与外围寄存器的控制通路见第~\ref{sec:datapath}~节。为了让ALU内部获取要执行的运算操作，需要在ALU内部根据IR提供的指令类型翻译为ALU的控制信号。在本设计中，每一种运算都对应一种控制信号。
+
+% 放一张表
+
+\subsubsection{ALU的内部控制逻辑}
+这一部分描述ALU的内部控制信号与来自状态寄存器的Flags如何控制ALU内部数据通路的开关。
+
+% 放一张表
 
 \subsection{CPU内部数据通路、控制信号与微操作指令（Micro-Operations）}
-\subsubsection{数据通路与控制信号}
+CPU中总线、寄存器、内存和ALU等关键器件需要以合理的时序执行不同的指令，而这需要数据通路和控制通路共同实现。数据通路负责在各个器件中传递数据，而控制通路负责控制数据通路的开关。因此，在本节中，先定义CPU需要的数据通路，再进一步定义控制数据通路的控制信号，最后描述承载控制信号的微指令。
+
+\subsubsection{数据通路与控制信号}\label{sec:datapath}
 关键存储单元之间通过数据通路进行连接。每条数据通路都由一位控制信号控制。控制信号为1时表示通路打开，数据沿指定流向进行传输。该CPU共有\textbf{14}位控制信号。
 \begin{longtable}{c c c}
   \caption{数据通路与控制信号一览} \label{tab:CPU:DataPath} \\
@@ -479,6 +520,10 @@ CPU由\textbf{全局同步时钟}控制，所有控制逻辑与计算逻辑全�
 \subsection{激励设置}
 
 \section{FPGA实现}
+
+\nocite{FPGA-CPU}
+
+\printbibliography
 \newpage
 \addappheadtotoc
 \begin{appendices}
