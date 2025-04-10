@@ -7,18 +7,47 @@
 \usepackage{subfig}
 \usepackage{longtable}
 \usepackage{lipsum}
+\usepackage{makecell}
 % \usepackage[backend=biber, style=gb7714-2015]{biblatex}
 % \usepackage[title]{appendix}
 % \usepackage{subfigure}
 % \usepackage{subfloat}
 \renewcommand{\listtablename}{表格目录}
 \renewcommand{\appendixname}{附录~\Alph{section}}
+
+\lstdefinelanguage{Assembly}{
+  morekeywords={ ADD, SUB, MPY, JGZ, JMP, AND, OR,BUT,LOAD,STORE,SHIFTL,SHIFTR,HALT},  % 你可以在这里添加更多汇编指令
+  sensitive=true,  % 保证区分大小写
+  morecomment=[l]; % 单行注释（以分号开始）
+  morestring=[b]",  % 字符串用双引号括起来
+}
+% Define the style for listings
+\lstset{
+  language=Assembly,  % 选择使用的语言
+  basicstyle=\ttfamily\small,  % 基础字体风格
+  keywordstyle=\color{blue}\bfseries,  % 指令的颜色和加粗
+  commentstyle=\color{green},  % 注释的颜色
+  stringstyle=\color{red},  % 字符串的颜色
+  identifierstyle=\color{purple},  % 标识符的颜色
+  backgroundcolor=\color{lightgray!10}, % 背景色
+  numbers=left,  % 行号显示在左侧
+  stepnumber=1,  % 每行显示一个行号
+  numberstyle=\tiny\color{gray},  % 行号的字体样式
+  numbersep=5pt,  % 行号与代码之间的间距
+  breaklines=true,  % 自动换行
+  showstringspaces=false,  % 不显示字符串中的空格
+  columns=flexible,  % 调整列宽
+  frame=single,  % 在代码块外部加一个框
+  framerule=0.5mm,  % 框线宽度
+  rulesepcolor=\color{black},  % 分隔线颜色
+  captionpos=b,  % 标题位置（b: bottom）
+}
 % \renewcommand{\refname}{参考文献}
 \title{计算机组织与结构II：CPU设计文档}
 \author{李勃璘 \\ 吴健雄学院}
 
-\version{1.0}
-\date{\zhdate{2025/3/22}}
+\version{1.1}
+\date{\zhdate{2025/4/11}}
 
 % 本文档命令
 \usepackage{array}
@@ -112,19 +141,19 @@ CPU由控制单元（CU），逻辑运算单元（ALU），内存（Memory）和
 \subsubsection{指令集支持的指令}
 指令集共支持13条不同的指令，列于表~\ref{tab:ISA:instructions}。每一条指令包含一个指令码，使用16进制格式存储。指令码的最高位为1时，寻址方式为立即数寻址；指令码的最高位为0时，寻址方式为直接寻址。
 \begin{remark}
-  指令中含*的仅支持直接寻址，因为立即数寻址对这些指令无意义。
+  指令中含*的仅支持直接寻址，因为立即数寻址对这些指令无意义。含$^\circledast$的仅支持立即数寻址。
 \end{remark}
 
 \begin{longtable}{c c c}
   \caption{指令集包含指令及功能（直接寻址下）} \label{tab:ISA:instructions} \\
   \toprule
-  助记符  & 指令码(HEX) & 描述 \\
+  助记符  & 指令码（低四位） & 描述 \\
   \midrule
   \endfirsthead
   
   \caption[]{（续表）指令集包含指令及功能（直接寻址下）} \\
   \toprule
-  助记符  & 指令码(HEX) & 描述 \\
+  助记符  & 指令码（低四位） & 描述 \\
   \midrule
   \endhead
   
@@ -136,19 +165,19 @@ CPU由控制单元（CU），逻辑运算单元（ALU），内存（Memory）和
   \bottomrule
   \endlastfoot
   
-  *STORE X &  01   & [X] $\leftarrow$ ACC  \\
-  *LOAD X  & 02    & ACC $\leftarrow$ [X]  \\
-  ADD X   & 03    & ACC $\leftarrow$ ACC + [X]\\
-  SUB X   & 04    & ACC $\leftarrow$ ACC - [X]\\
-  JGZ X   & 05    & ACC $\geq$ 0 ? PC $\leftarrow$ X : PC $\leftarrow$ PC + 1\\
-  JMP X   & 06    & PC $\leftarrow$ X\\
-  *HALT    & 07    & Stop\\
-  MPY X   & 08    & MR, ACC $\leftarrow$ ACC * [X]，MR用于存储高16位 \\
-  AND X   & 09    & ACC $\leftarrow$ ACC \& [X]\\
-  OR X    & 10    & ACC $\leftarrow$ ACC | [X]\\
-  NOT X   & 11    & ACC $\leftarrow$ \~[X] \\
-  SHIFTR  & 12    & ACC $\leftarrow$ ACC $>>>$ 1，算术右移\\
-  SHIFTL  & 13    & ACC $\leftarrow$ ACC $<<<$ 1，算术左移\\
+  *STORE X &  0001   & [X] $\leftarrow$ ACC  \\
+  *LOAD X  & 0010    & ACC $\leftarrow$ [X]  \\
+  ADD X   & 0011    & ACC $\leftarrow$ ACC + [X]\\
+  SUB X   & 0100  & ACC $\leftarrow$ ACC - [X]\\
+  JGZ X   & 0101    & ZF 和 NF 均为 0   ? PC $\leftarrow$ X : PC $\leftarrow$ PC + 1\\
+  JMP X   & 0110    & PC $\leftarrow$ X\\
+  *HALT    & 0111    & Stop\\
+  MPY X   & 1000    & MR, ACC $\leftarrow$ ACC * [X]，MR用于存储高16位 \\
+  AND X   & 1001    & ACC $\leftarrow$ ACC \& [X]\\
+  OR X    & 1010    & ACC $\leftarrow$ ACC | [X]\\
+  NOT X   & 1011    & ACC $\leftarrow$ \~[X] \\
+  $^\circledast$ SHIFTR  & 1100    & ACC $\leftarrow$ ACC $>>>$ 1，算术右移\\
+  $^\circledast$ SHIFTL  & 1101    & ACC $\leftarrow$ ACC $<<<$ 1，算术左移\\
 \end{longtable}
 
 \subsection{CPU内部寄存器}
@@ -179,7 +208,7 @@ CPU由控制单元（CU），逻辑运算单元（ALU），内存（Memory）和
   MAR  & 内存地址寄存器，存储要访问的内存地址     & 1  & 8   & 地址码（Address）& /\\
   MBR  & 内存缓冲寄存器，存储从内存读取或写入的数据 & 1  & 16  & 二进制补码 & /\\
   IR   & 指令寄存器，存储当前正在执行的指令       & 1  & 8   & 指令码（Opcode）& /\\
-  BR   & 通用寄存器，存储 ALU 计算中间结果        & 1  & 16  & 二进制补码 & ALU\\
+  % BR   & 通用寄存器，存储 ALU 计算中间结果        & 1  & 16  & 二进制补码 & ALU\\
   ACC  & 累加寄存器，存储 ALU 运算结果           & 1  & 16  & 二进制补码 & ALU\\
   MR   & 乘法寄存器，存储 ALU 乘法高 16 位       & 1  & 16  & 二进制补码 & ALU\\
   CM   & 控制存储器，存储微指令控制信号         & 未定 & 14  & 控制信号 & CU\\
@@ -219,6 +248,37 @@ CPU由控制单元（CU），逻辑运算单元（ALU），内存（Memory）和
 \subsection{算术逻辑单元ALU}
 算术逻辑单元ALU负责进行大部分CPU内的计算\footnote{PC自增与PC赋值在设计中不引入ALU。}。它通过MBR获取运算的第二个数据，计算方式受状态寄存器影响，计算结果存入ACC寄存器中（若有乘法则可能存入MR寄存器）。
 
+\begin{longtable}{c c c c c c c}
+  \caption{各指令对标志位的影响} \label{tab:ISA:flags} \\
+  \toprule
+  操作码低四位 & 助记符 & ZF & CF & OF & NF & MF\\
+  \midrule
+  \endfirsthead
+  
+  \caption[]{（续表）各指令对标志位的影响} \\
+  \toprule
+  操作码低四位 & 助记符 & ZF & CF & OF & NF & MF\\
+  \midrule
+  \endhead
+  
+  \midrule
+  \multicolumn{7}{r}{续下页} \\
+  \midrule
+  \endfoot
+  
+  \bottomrule
+  \endlastfoot
+  
+  0001 & ADD     & 为0时置1 & 0 & 溢出置1 & 负数置1 & 0 \\
+  0010 & SUB     & 为0时置1 & 0 & 溢出置1 & 负数置1 & 0 \\
+  0011 & MPY     & 为0时置1 & 0 & 0 & 负数置1 & MR不为0时置1 \\
+  0100 & AND     & 为0时置1 & 0 & 0 & 负数置1 & 0 \\
+  0101 & OR      & 为0时置1 & 0 & 0 & 负数置1 & 0 \\
+  0110 & NOT     & 为0时置1 & 0 & 0 & 负数置1 & 0 \\
+  0111 & SHIFTR  & 为0时置1 & 最低位 & 0 & 负数置1 & 0 \\
+  1000 & SHIFTL  & 为0时置1 & 最高位 & 0 & 负数置1 & 0 \\
+
+\end{longtable}
 
 \subsubsection{ALU的数据通路}
 \begin{longtable}{c c c}
@@ -307,116 +367,180 @@ CPU中总线、寄存器、内存和ALU等关键器件需要以合理的时序�
 \end{longtable}
 
 \subsubsection{微操作指令（Micro-Operations）}
-为了实现指令集中所有指令，需要将指令集的指令分解为多步微操作指令。为了和后续流水线部分对齐，在微操作指令的设计上，也分为和五步流水线相同的步骤。
+为了实现指令集中所有指令，需要将指令集的指令分解为多步微操作指令。为了和后续流水线部分对齐，在微操作指令的设计上，也分为和六级流水线相同的步骤。
 
 在本设计中，采用水平微指令（Horizontal Micro-operation）设计。这意味着每一个微操作指令携带所有控制信号位的开关和下一个微操作指令的地址。
 
 所有用逗号隔开的指令均\textbf{从左到右顺序执行}，不能并行执行。所有的微操作指令见表~\ref{tab:microops}。
+% \begin{longtable}{c c c c}
+%   \caption{CISC 指令拆分、微操作与控制信号一览} \label{tab:CISC2RISC} \\
+%   \toprule
+%   指令 & 拆分的 RISC 指令 & 微操作（五级流水） & 控制信号位 \\
+%   \midrule
+%   \endfirsthead
+
+%   \caption[]{（续表）CISC 指令拆分、微操作与控制信号一览} \\
+%   \toprule
+%   指令 & 拆分的 RISC 指令 & 微操作（五级流水） & 控制信号位 \\
+%   \midrule
+%   \endhead
+
+%   \midrule
+%   \multicolumn{4}{r}{续下页} \\
+%   \midrule
+%   \endfoot
+
+%   \bottomrule
+%   \endlastfoot
+
+% ADD X & LOAD X; ADD MBR & 
+% \begin{tabular}{l}
+% IF: PC→MAR, Mem[MAR]→MBR \\
+% ID: MBR→IR, IR→Decode \\
+% EX1: X→MAR (C6) \\
+% MEM1: Mem[MAR]→MBR (C5) \\
+% EX2: ACC+MBR→ALU (C7,C9) \\
+% WB: ALU→ACC (C9)
+% \end{tabular}
+% & C6, C5, C7, C9 \\
+
+% SUB X & LOAD X; SUB MBR & 同上, EX2为ACC-MBR & C6, C5, C7, C9 \\
+
+% MPY X & LOAD X; MPY MBR & 同上, EX2为ACC×MBR & C6, C5, C7, C9 \\
+
+% STORE X & STORE ACC → [X] & 
+% \begin{tabular}{l}
+% IF-ID-EX: X→MAR (C6) \\
+% MEM: ACC→MBR (C8) \\
+% WB: MBR→Mem[MAR] (C5)
+% \end{tabular}
+% & C6, C8, C5 \\
+
+% LOAD X & LOAD Mem[X] → ACC &
+% \begin{tabular}{l}
+% IF-ID-EX: X→MAR (C6) \\
+% MEM: Mem[MAR]→MBR (C5) \\
+% WB: MBR→ACC (C9)
+% \end{tabular}
+% & C6, C5, C9 \\
+
+% \end{longtable}
 
 \begin{longtable}{cccc}
-  \caption{控制单元微操作指令一览} \label{tab:microops}\\
+  \caption{五级流水线控制信号表} \label{tab:compact_pipeline}\\
   \toprule
-  阶段 & 指令 & 微操作 & 控制信号 \\
+  指令 & \makecell{EX阶段\\（微操作/控制信号）} & \makecell{MEM阶段\\（微操作/控制信号）} & \makecell{WB阶段\\（微操作/控制信号）} \\
   \midrule
   \endfirsthead
-  
+
   \toprule
-  \caption[]{（续表）控制单元微操作指令一览} \\
+  \caption[]{（续表）五级流水线控制信号表} \\
   \toprule
-  阶段 & 指令 & 微操作 & 控制信号 \\
+  指令 & EX阶段 & MEM阶段 & WB阶段 \\
   \midrule
   \endhead
-  
+
   \midrule
   \multicolumn{4}{r}{续下页} \\
   \midrule
   \endfoot
-  
+
   \bottomrule
   \endlastfoot
-  
-  IF & ALL & MAR $\leftarrow$ PC ; PC $\leftarrow$ PC + 1 ; MBR $\leftarrow$ Mem[MAR] & 0, 2, 3, 5 \\
-  ID & ALL & IR $\leftarrow$ MBR, CU $\leftarrow$ IR & 4, 13 \\
-  EX & ALL EXCEPT MPY & MF清零（此条附加到所有指令的EX步骤）& 无 \\
+
+  %%% 通用阶段 %%%
+  \multicolumn{4}{l}{所有指令共享的公共阶段：} \\
+  IF & \multicolumn{3}{l}{MAR←PC; PC←PC+1; MBR←Mem[MAR] \quad (C0,C2,C3,C5)} \\
+  ID & \multicolumn{3}{l}{IR←MBR; CU←IR \quad (C4,C13)} \\
   \midrule
-  EX & STORE X & MAR $\leftarrow$ X & 6 \\
-  MEM & STORE X & Mem[MAR] $\leftarrow$ ACC & 8 \\
-  WB & STORE X & 无 & 无 \\
-  
+
+  %%% 存储指令 %%%
+  STORE X & 
+  MAR←X \quad (C6) & 
+  Mem[MAR]←ACC \quad (C11,C12) & 
+  无操作 \\
   \midrule
-  EX & LOAD X & MAR $\leftarrow$ X & 6 \\
-  MEM & LOAD X & MBR $\leftarrow$ Mem[MAR] & 7 \\
-  WB & LOAD X & ACC $\leftarrow$ MBR & 10 \\
-  
+
+  %%% 加载指令 %%%
+  LOAD X & 
+  MAR←X \quad (C6) & 
+  MBR←Mem[MAR] \quad (C5) & 
+  ACC←MBR \quad (C10) \\
   \midrule
-  EX & ADD X & MAR $\leftarrow$ X & 6 \\
-  MEM & ADD X & MBR $\leftarrow$ Mem[MAR] & 7 \\
-  EX & ADD X & ALU: ACC $\leftarrow$ ACC + MBR ; 更新 ZF, CF, OF, NF & ALU: 控制信号待补充 \\
-  WB & ADD X & ACC $\leftarrow$ ALU结果 & 9 \\
+
+  %%% 算术运算 %%%
+  ADD X & 
+  MAR←X \quad (C6) & 
+  MBR←Mem[MAR] \quad (C5) & 
+  \makecell{ACC←ACC+MBR;\\ \quad (C7,C9)} \\
   
+  SUB X & 
+  MAR←X \quad (C6) & 
+  MBR←Mem[MAR] \quad (C5) & 
+  \makecell{ACC←ACC-MBR;\\ \quad (C7,C9)} \\
+  
+  MPY X & 
+  MAR←X \quad (C6) & 
+  MBR←Mem[MAR] \quad (C5) & 
+  \makecell{ACC,MR←ACC×MBR;\\ \quad (C7,C9,C14)} \\
   \midrule
-  EX & SUB X & MAR $\leftarrow$ X & 6 \\
-  MEM & SUB X & MBR $\leftarrow$ Mem[MAR] & 7 \\
-  EX & SUB X & ALU: ACC $\leftarrow$ ACC - MBR ; 更新 ZF, CF, OF, NF & ALU: 控制信号待补充 \\
-  WB & SUB X & ACC $\leftarrow$ ALU结果 & 9 \\
+
+  %%% 逻辑运算 %%%
+  AND X & 
+  MAR←X \quad (C6) & 
+  MBR←Mem[MAR] \quad (C5) & 
+  \makecell{ACC←ACC AND MBR;\\ \quad (C7,C9)} \\
   
+  OR X & 
+  MAR←X \quad (C6) & 
+  MBR←Mem[MAR] \quad (C5) & 
+  \makecell{ACC←ACC OR MBR; \\\quad (C7,C9)} \\
+  
+  NOT X & 
+  MAR←X \quad (C6) & 
+  MBR←Mem[MAR] \quad (C5) & 
+  \makecell{ACC←NOT MBR;\\ \quad (C7,C9)} \\
   \midrule
-  EX & MPY X & MAR $\leftarrow$ X & 6 \\
-  MEM & MPY X & MBR $\leftarrow$ Mem[MAR] & 7 \\
-  EX & MPY X & ALU: ACC, MR $\leftarrow$ ACC $\times$ MBR ; 更新 ZF, OF, NF, MF & ALU: 控制信号待补充 \\
-  WB & MPY X & ACC, MR $\leftarrow$ ALU结果 & 9 \\
+
+  %%% 移位操作 %%%
+  SHIFTR & 
+  准备移位量 \quad (C8) & 
+  无操作 & 
+  ACC←ACC$\ggg$1;\quad (C7,C9) \\
   
+  SHIFTL & 
+  准备移位量 \quad (C8) & 
+  无操作 & 
+  ACC←ACC$\lll$1;  \quad (C7,C9) \\
   \midrule
-  EX & AND X & MAR $\leftarrow$ X & 6 \\
-  MEM & AND X & MBR $\leftarrow$ Mem[MAR] & 7 \\
-  EX & AND X & ALU: ACC $\leftarrow$ ACC AND MBR ; 更新 ZF, NF & ALU: 控制信号待补充 \\
-  WB & AND X & ACC $\leftarrow$ ALU结果 & 9 \\
+
+  %%% 控制指令 %%%
+  JMP X & 
+  PC←X \quad (C6) & 
+  流水线清空 & 
+  无操作 \\
   
-  \midrule
-  EX & OR X & MAR $\leftarrow$ X & 6 \\
-  MEM & OR X & MBR $\leftarrow$ Mem[MAR] & 7 \\
-  EX & OR X & ALU: ACC $\leftarrow$ ACC OR MBR ; 更新 ZF, NF & ALU: 控制信号待补充 \\
-  WB & OR X & ACC $\leftarrow$ ALU结果 & 9 \\
+  JGZ X & 
+  检查条件(ZF=0,NF=0) & 
+  若条件成立：PC←X \quad (C6) & 
+  流水线清空 \\
   
-  \midrule
-  EX & NOT X & MAR $\leftarrow$ X & 6 \\
-  MEM & NOT X & MBR $\leftarrow$ Mem[MAR] & 7 \\
-  EX & NOT X & ALU: ACC $\leftarrow$ NOT MBR ; 更新 ZF, NF & ALU: 控制信号待补充 \\
-  WB & NOT X & ACC $\leftarrow$ ALU结果 & 9 \\
-  
-  \midrule
-  EX & SHIFTR & ALU: ACC $\leftarrow$ ACC $\ggg$ 1 ; CF $\leftarrow$ 位移出位 ; 更新 ZF, NF & ALU: 控制信号待补充 \\
-  MEM & SHIFTR & 无 & 无 \\
-  WB & SHIFTR & ACC $\leftarrow$ ALU结果 & 9 \\
-  
-  \midrule
-  EX & SHIFTL & ALU: ACC $\leftarrow$ ACC $\lll$ 1 ; CF $\leftarrow$ 位移出位 ; 更新 ZF, NF & ALU: 控制信号待补充 \\
-  MEM & SHIFTL & 无 & 无 \\
-  WB & SHIFTL & ACC $\leftarrow$ ALU结果 & 9 \\
-  
-  \midrule
-  EX & JMP X & PC $\leftarrow$ X & 6 \\
-  MEM & JMP X & 无 & 无 \\
-  WB & JMP X & 无 & 无 \\
-  
-  \midrule
-  EX & JGZ X & 若 ZF=0 且 NF=0，则 PC $\leftarrow$ X；否则 PC $\leftarrow$ PC & 6 \\
-  MEM & JGZ X & 无 & 无 \\
-  WB & JGZ X & 无 & 无 \\
-  
-  \midrule
-  EX & HALT & \texttt{enable} ← 0 & 无 \\
-  MEM & HALT & 无 & 无 \\
-  WB & HALT & 无 & 无 \\
-  
+  HALT & 
+  \texttt{enable}←0 & 
+  冻结流水线 & 
+  无操作 \\
 \end{longtable}
 
 
+
+
+
 \subsection{内存（RAM）}
-内存（RAM）存储指令集和CPU保存的数据。内存的大小为 512 Byte，每条存入内存的数据位宽为16，共能存入256条数据。其中，内存地址0到内存地址12预留为指令集。为了节省内存，不同寻址方式下的相同指令不占用两条内存，由CU改变指令的Opcode。
+内存（RAM）存储指令集和CPU保存的数据。内存的大小为 512 Byte，每条存入内存的数据位宽为16，共能存入256条数据。
 
 内存支持总线读写，并受三条总线控制：地址总线、数据总线和控制总线。\textbf{控制总线}中的外部控制信号决定在这个周期中内存的读/写状态，是否向数据总线写入，同步时序等功能。CPU与内存（RAM）通过两条总线交互，分别为\textbf{地址总线}和\textbf{数据总线}。内存通过读取地址总线决定写入内存中的地址，通过读取数据总线决定写入指定地址中的数据。关于总线的具体配置见~\ref{sec:ExternalControl}。
 
+采用Harvard结构，内存中\textcolor{red}{不存放待执行指令}。待执行指令存放于另一块内存中，防止数据通路和指令通路发生冲突。
 \subsection{总线与外部控制信号}\label{sec:ExternalControl}
 
 \subsubsection{地址总线}
@@ -467,6 +591,36 @@ CPU中总线、寄存器、内存和ALU等关键器件需要以合理的时序�
   5   & PipelineFlush & CU    & 流水线清空（如错误预测、异常发生）      & 无 \\
 
 \end{longtable}
+\section{I/O接口}
+\subsection{汇编代码解释}
+目前采用\textbf{用户编写汇编代码}$\to$\textbf{转换为16位机器码}的方式输入指令。用户可在文本编辑器中编写类汇编代码，而解释器负责将其解释为机器码。
+
+以从1加到100的程序举例：
+\begin{lstlisting}[language=Assembly]
+  LOAD IMMEDIATE 0    ; 初始化累加器为0 → ACC=0
+  STORE 1            ; 存储到地址1（SUM变量）
+  LOAD IMMEDIATE 1    ; 初始化计数器为1 → ACC=1
+  STORE 2            ; 存储到地址2（i计数器）
+LOOP: LOAD 0             ; 读取当前累加值 → ACC=SUM
+  ADD 1              ; 加上当前计数器值 → ACC=SUM+i
+  STORE 1            ; 更新累加值 → SUM=SUM+i
+  LOAD 2             ; 读取计数器 → ACC=i
+  ADD IMMEDIATE 1    ; 计数器自增 → ACC=i+1
+  STORE 2            ; 更新计数器 → i=i+1
+  SUB IMMEDIATE 100  ; 比较是否达到100 → ACC=i-100
+  JGZ LOOP           ; 如果i<=100（即ACC<=0），继续循环
+  HALT
+\end{lstlisting}
+
+代码最终将被解释为一串二进制比特流，解释服从：
+\begin{itemize}
+  \item 含IMMEDIATE关键字的行，Opcode的MSB为1；
+  \item 在代码解释的过程中，\texttt{LOOP}应映射到相同行指令的地址。
+\end{itemize}
+
+拟采用Python语言对用户代码进行处理，处理好的比特流可通过UART串口通信传入FPGA的BRAM或写入coe文件。
+
+传入FPGA的所有指令将存于单独的内存中，与CPU内存隔离开来。CPU内存仅存数据，这符合用户编写的直观感受。每条存入内存的数据位宽为16，即每个地址按顺序存放一条指令。地址从1开始依次递增，防止复位时地址位初始化为0导致出错。指令写入在CPU开机之前，写入成功后开发板亮蓝灯。若在CPU运行时没有指令，则开发板亮红灯。
 \section{流水线架构与优化策略}
 \subsection{总体架构}
 为了加速CPU的指令执行速度，采用\textbf{5级同步流水线}完成CPU执行指令的全流程。分别为：取指令（IF），指令译码（ID），指令执行（EX），内存访问（MEM）和写回寄存器（WB）五个阶段。流水线的五个阶段如下所示。
@@ -505,14 +659,14 @@ $$
           \State $NextPC \gets BranchTarget$
       \Else
           \State $PredictedTaken \gets \text{False}$
-          \State $NextPC \gets PC + 2$
+          \State $NextPC \gets PC + 1$
       \EndIf
   \EndProcedure
 
   \Procedure{Branch Resolution}{}
       \If {$BranchTaken \neq PredictedTaken$}  \Comment{预测错误}
           \State $Flush \gets 1$  \Comment{清空错误指令}
-          \State $NextPC \gets \textbf{if } BranchTaken \textbf{ then } BranchTarget \textbf{ else } PC + 2$
+          \State $NextPC \gets \textbf{if } BranchTaken \textbf{ then } BranchTarget \textbf{ else } PC + 1$
       \EndIf
       \State \textbf{Update Predictor:}
       \State $PredictorBit \gets BranchTaken$  \Comment{更新 1-bit 预测器}
@@ -531,7 +685,8 @@ CPU由\textbf{全局同步时钟}控制，所有控制逻辑与计算逻辑全�
 当CPU执行07号指令HALT时，CPU处于\textbf{暂停}状态。与复位不同的是，此时所有寄存器不清空，但所有通路断开。在模块中使用\texttt{enable}信号标识（低电平有效）。恢复程序运行的方法是全局复位或继续运行信号（绑定FPGA的按键）。当该按键被按下时，\texttt{enable}信号恢复为1。
 \subsection{ALU}
 \subsubsection{ALU运算结果}
-ALU运算结果存放于MR寄存器和ACC寄存器中。其中MR寄存器存放乘法运算的高位结果，ACC寄存器存放乘法运算的低位结果。ALU与两个寄存器的数据通路都由7号控制位控制。MR连向ALU的高位结果，ACC连向ALU的低位结果。当控制信号MF为1时
+ALU运算结果存放于MR寄存器和ACC寄存器中。其中MR寄存器存放乘法运算的高位结果，ACC寄存器存放乘法运算的低位结果。ALU与两个寄存器的数据通路都由7号控制位控制。MR连向ALU的高位结果，ACC连向ALU的低位结果。当控制信号MF为1时，若需要访存，则添加一个MEM阶段进行MR的访存。
+
 \subsection{CU}
 参考表~\ref{tab:CPU:DataPath}~，确定指令集中的每一条指令对应的控制信号，并存储到CU的内部寄存器中，即可完成CU的主要功能设计。
 
@@ -569,7 +724,31 @@ ALU运算结果存放于MR寄存器和ACC寄存器中。其中MR寄存器存放�
 \subsection{激励设置}
 
 \section{FPGA实现}
+\subsection{用户输入端}
+采用第一个测试样例进行测试。
+$$
+1+2+\dots +99 +100 =5050
+$$
+编写源程序如下：
+\begin{lstlisting}[language=Assembly]
+      LOAD IMMEDIATE 0 
+      STORE 1
+      LOAD IMMEDIATE 1
+      STORE 2
+      LOAD IMMEDIATE 100
+      STORE 3
+LOOP: LOAD 1
+      ADD 2
+      STORE 1
+      LOAD 2
+      ADD IMMEDIATE 1
+      STORE 2
+      LOAD 2
+      SUB 3
+      JGZ LOOP
 
+      HALT
+\end{lstlisting}
 \nocite{FPGA-CPU}
 
 \printbibliography
