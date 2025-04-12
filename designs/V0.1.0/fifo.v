@@ -2,7 +2,7 @@
 // Author: LiPtP
 // Description
 `timescale 1ns / 1ps
-module AsyncFIFO_UART_to_BRAM (
+module FIFO (
     i_rst_n,
     i_clk_wr,
     i_valid_uart,
@@ -10,7 +10,8 @@ module AsyncFIFO_UART_to_BRAM (
     i_clk_rd,
     o_data_bram,
     o_addr_bram,
-    o_wr_en_bram
+    o_wr_en_bram,
+    o_fifo_empty
 );
   input i_rst_n;
 
@@ -24,6 +25,9 @@ module AsyncFIFO_UART_to_BRAM (
   output reg [15:0] o_data_bram;
   output reg [7:0] o_addr_bram;
   output reg o_wr_en_bram;
+
+  // for judging completion
+  output o_fifo_empty;
 
   localparam DEPTH = 16;  // FIFO depth
   localparam ADDR_WIDTH = 4;  // Address for FIFO
@@ -79,7 +83,7 @@ module AsyncFIFO_UART_to_BRAM (
       o_addr_bram  <= 0;
       o_wr_en_bram <= 0;
     end else begin
-      o_wr_en_bram <= 0;  
+      o_wr_en_bram <= 0;
 
       // Read a byte to data_buffer if it's odd or write out
       if (!fifo_empty) begin
@@ -99,7 +103,7 @@ module AsyncFIFO_UART_to_BRAM (
 
       end else if (byte_flag) begin
         // if there are odd bytes from UART, fill zero
-        o_data_bram  <= {data_buffer, 8'h00};  
+        o_data_bram  <= {data_buffer, 8'h00};
         o_addr_bram  <= o_addr_bram + 1;
         o_wr_en_bram <= 1;
         byte_flag    <= 0;
@@ -118,5 +122,6 @@ module AsyncFIFO_UART_to_BRAM (
     end
   end
 
+  assign o_fifo_empty = fifo_empty;
 endmodule
 

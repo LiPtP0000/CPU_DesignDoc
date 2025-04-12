@@ -24,10 +24,10 @@
 }
 % Define the style for listings
 \lstset{
-  language=Assembly,  % 选择使用的语言
+  language=Verilog,  % 选择使用的语言
   basicstyle=\ttfamily\small,  % 基础字体风格
   keywordstyle=\color{blue}\bfseries,  % 指令的颜色和加粗
-  commentstyle=\color{green},  % 注释的颜色
+  commentstyle=\color{gray},  % 注释的颜色
   stringstyle=\color{red},  % 字符串的颜色
   identifierstyle=\color{purple},  % 标识符的颜色
   backgroundcolor=\color{lightgray!10}, % 背景色
@@ -617,7 +617,6 @@ LOOP: LOAD 0             ; 读取当前累加值 → ACC=SUM
 \begin{itemize}
   \item 地址占1byte，Opcode占1byte；
   \item 含IMMEDIATE关键字的行，Opcode的MSB为1；
-  \item 将\textbf{换行符}作为一条指令结束的标志，它将被映射为一个全零byte；
   \item 在代码解释的过程中，\texttt{LOOP}应映射到相同行指令的地址。
 \end{itemize}
 
@@ -667,12 +666,12 @@ LOOP: LOAD 0             ; 读取当前累加值 → ACC=SUM
 \paragraph{写入控制规则：}
 
 \begin{itemize}
-  \item 接收到 \texttt{0x00} 字节（全 0）后，代表当前指令输入结束，RAM 地址计数器自增 1；
-  \item RAM 地址从地址 1 开始顺序写入，地址 0 预留用于程序入口或特殊用途；
+  \item 每一条指令都为2byte指令，即使其可能没有操作数。对于没有操作数的情况，将操作数位置补零。
+  \item RAM 地址从地址 0 开始顺序写入。
   \item 程序中如含有 \texttt{LOOP} 标签，将在 RAM 地址分配完毕后由软件在解析阶段回填其地址位置。
 \end{itemize}
 
-另外，传入FPGA的所有指令将存于单独的内存中，与CPU内存隔离开来。CPU内存仅存数据，这符合用户编写的直观感受。每条存入内存的数据位宽为16，即每个地址按顺序存放一条指令。地址从1开始依次递增，防止复位时地址位初始化为0导致出错。指令写入在CPU开机之前，写入成功后开发板亮蓝灯。若在CPU运行时没有指令，则开发板亮红灯。
+另外，传入FPGA的所有指令将存于单独的指令内存中，与CPU数据内存隔离开来。CPU内存仅存数据，这符合用户编写的直观感受。每条存入内存的数据位宽为16，即每个地址按顺序存放一条指令。地址从1开始依次递增，防止复位时地址位初始化为0导致出错。指令写入在CPU开机之前，写入成功后开发板亮蓝灯。若在CPU运行时没有指令，则开发板亮红灯。
 
 本模块通过串口实现了简洁的二进制指令数据装载方式，降低了外设复杂性，为后续的控制单元译码与执行单元操作提供了明确的数据支持。
 
@@ -737,13 +736,21 @@ $$
 
 \section{模块设计}
 \subsection{时钟、复位与停止信号}
-CPU由\textbf{全局同步时钟}控制，时钟主频为50MHz。所有控制逻辑与计算逻辑全部在时钟上升沿进行。UART传输部分使用100MHz的时钟主频。
+CPU由\textbf{全局同步时钟}控制，时钟主频为50MHz。除复位信号外，所有控制逻辑与计算逻辑全部在时钟上升沿进行。UART传输部分使用100MHz的时钟主频。
 
 CPU设有\textbf{全局异步复位}信号，低电平有效。当异步复位时，内存中除指令集数据以外所有数据清空，所有寄存器清空，控制信号全部归为断开（0）。
 
 当CPU执行07号指令HALT时，CPU处于\textbf{暂停}状态。与复位不同的是，此时所有寄存器不清空，但所有通路断开。在模块中使用\texttt{enable}信号标识（低电平有效）。恢复程序运行的方法是全局复位或继续运行信号（绑定FPGA的按键）。当该按键被按下时，\texttt{enable}信号恢复为1。
 \subsection{UART传输与指令写入}
+指令写入通过Python脚本（附录~\ref{sec:appendices:python}~）完成，其可以根据用户输出一串UART格式的比特流。用户可通过PC上的串口调试设备连接UART端口进行传输。
+
 \subsubsection{UART模块}
+\paragraph{模块基本信息：}
+\begin{itemize}
+  \item 模块名：\texttt{UART}
+  \item 最新更新日期：\texttt{4.13}
+  \item 是否经过测试：否
+\end{itemize}
 \paragraph{模块功能：}
 将用户输入代码比特流（8N1格式）译码为1字节数据。
 \paragraph{模块外部接口：}
@@ -758,13 +765,20 @@ CPU设有\textbf{全局异步复位}信号，低电平有效。当异步复位�
   \texttt{i\_rst\_n} & 输入  & 1      & 全局复位信号 \\
   \texttt{i\_rx}    & 输入  & 1      & UART 接收引脚 \\
   \texttt{o\_data}  & 输出  & 8    & 接收到的一帧数据 \\
-  \texttt{o\_valid} & 输出  & 1      & 数据有效标志，高电平表示 \texttt{o\_data} 可用 \\
+  \texttt{o\_valid} & 输出  & 1      & 数据有效标志，高电平表示 \texttt{o\_data} 已生成 \\
+  \texttt{o\_clear\_sign}    & 输出   & 1       & 表示UART输入结束（第一次输入结束后0.5秒内无新的输入）\\
   \bottomrule
   \end{longtable}
 
 \subsubsection{FIFO模块}
+\paragraph{模块基本信息：}
+\begin{itemize}
+  \item 模块名：\texttt{FIFO}
+  \item 最新更新日期：\texttt{4.13}
+  \item 是否经过测试：否
+\end{itemize}
 \paragraph{模块功能：}
-缓存UART数据，当读入2字节数据时FIFO满，存入BRAM。
+异步FIFO，缓存UART数据。将每两个读出的UART数据拼成2字节的指令输出给BRAM。
 \paragraph{模块外部接口：}
 \begin{longtable}{>{\bfseries}c c c c}
   \toprule
@@ -772,13 +786,42 @@ CPU设有\textbf{全局异步复位}信号，低电平有效。当异步复位�
   \midrule
   \endhead
   
-  \texttt{i\_clk}   & 输入  & 1      & 系统时钟信号 \\
-  \texttt{i\_rst\_n} & 输入  & 1      & 全局复位信号 \\
-  \texttt{i\_rx}    & 输入  & 1      & UART 接收引脚 \\
-  \texttt{o\_data}  & 输出  & 8    & 接收到的一帧数据 \\
-  \texttt{o\_fifo\_full} & 输出  & 1      & 高电平表示FIFO满 \\
+  \texttt{i\_rst\_n}         & 输入  & 1        & 异步复位信号，低有效 \\
+  \texttt{i\_clk\_wr}        & 输入  & 1        & 写时钟信号，UART 使用的 100MHz 时钟 \\
+  \texttt{i\_valid\_uart}    & 输入  & 1        & 表示当前 UART 输入数据有效 \\
+  \texttt{i\_data\_uart}     & 输入  & 8        & UART 接收到的 8 位数据字节 \\
+  \texttt{i\_clk\_rd}        & 输入  & 1        & 读时钟信号，主系统使用的 50MHz 时钟 \\
+  \texttt{o\_data\_bram}     & 输出  & 16       & 两个 UART 字节拼接后的数据，写入 BRAM \\
+  \texttt{o\_addr\_bram}     & 输出  & 8        & BRAM 写入地址，从 0 开始自增 \\
+  \texttt{o\_wr\_en\_bram}   & 输出  & 1        & BRAM 写使能，高电平表示写入有效 \\
+  \texttt{o\_fifo\_empty}    & 输出   & 1       & 表示FIFO空（作为输入完成的判据）\\
   \bottomrule
-  \end{longtable}
+\end{longtable}
+
+\subsubsection{指令BRAM模块}
+\paragraph{模块基本信息：}
+\begin{itemize}
+  \item 模块名：\texttt{BRAM\_INSTR}
+  \item 最新更新日期：\texttt{4.13}
+  \item 是否经过测试：否
+\end{itemize}
+\paragraph{模块功能：}
+描述一指令块RAM，可存放256条2byte指令。读写双口，拥有写使能（FIFO传入）。外部设备可通过地址读取对应地址的2byte指令。
+\paragraph{模块外部接口：}
+\begin{longtable}{>{\bfseries}c c c c}
+  \toprule
+  信号名 & 方向 & 位宽 & 描述 \\
+  \midrule
+  \endhead
+
+  \texttt{i\_clk}          & 输入  & 1        & 系统时钟信号，驱动读写操作 \\
+  \texttt{en\_write}       & 输入  & 1        & 写使能信号，高电平时允许将指令写入 BRAM \\
+  \texttt{i\_addr\_write}  & 输入  & 8        & 要写入的指令地址 \\
+  \texttt{i\_instr\_write} & 输入  & 16       & 要写入的指令内容 \\
+  \texttt{i\_addr\_read}   & 输入  & 8        & 要读取的指令地址 \\
+  \texttt{o\_instr\_read}  & 输出  & 16       & 从 BRAM 中读取的指令内容 \\
+  \bottomrule
+\end{longtable}
 
 \subsection{ALU}
 \subsubsection{ALU运算结果}
@@ -853,6 +896,142 @@ LOOP: LOAD 1
 \addappheadtotoc
 \begin{appendices}
   \section{完整设计代码}
+  \subsection{汇编程序处理Python脚本}\label{sec:appendices:python}
+  \begin{lstlisting}[language=python,caption={convert.py}]
+import re
+
+# memonics
+MEMONICS = {
+    "STORE":  0x01,
+    "LOAD": 0x02,
+    "ADD":   0x03,
+    "SUB":   0x04,
+    "JGZ":   0x05,
+    "JMP":  0x06,
+    "HALT":  0x07,
+    "MPY":  0x08,
+    "AND":  0x09,
+    "OR":   0x10,
+    "NOT":  0x11,
+    "SHIFTR": 0x12,
+    "SHIFTL":   0x13
+}
+
+def parse_assembly(lines):
+    machine_code = []
+    labels = {}
+    pending = []
+
+    # First pass: find labels
+    addr = 0
+    for line in lines:
+        line = line.split(';')[0].strip()  # clear comments
+        if not line:
+            continue
+        if ':' in line:
+            label, rest = map(str.strip, line.split(':', 1))
+            labels[label] = addr
+            if rest:
+                addr += 1
+        else:
+            addr += 1
+
+    # Second pass: generate code
+    addr = 0
+    for line in lines:
+        line = line.split(';')[0].strip()
+        if not line:
+            continue
+        if ':' in line:
+            parts = line.split(':', 1)
+            line = parts[1].strip()
+            if not line:
+                continue
+
+        tokens = line.split()
+        if not tokens:
+            continue
+
+        instr = tokens[0]
+        immediate = False
+
+        if instr in ["HALT","SHIFTR","SHIFTL"] : # No operand, fill with 0
+            opcode = MEMONICS[instr]
+            operand = 0x00
+        else:
+            if len(tokens) < 2:
+                raise ValueError(f"Missing operand in line: {line}")
+
+            if tokens[1] == "IMMEDIATE":
+                immediate = True
+                operand_str = tokens[2]
+                opcode = MEMONICS[instr] | 0x80  # MSB = 1
+            else:
+                operand_str = tokens[1]
+                opcode = MEMONICS[instr]  # MSB = 0
+
+            if operand_str.isdigit():
+                operand = int(operand_str)
+            elif operand_str in labels:
+                operand = labels[operand_str]
+            else:
+                try:
+                    operand = int(operand_str, 0)  # Support 0x form operand
+                except:
+                    raise ValueError(f"Unknown operand: {operand_str}")
+
+        if operand < 0 or operand > 255:
+            raise ValueError(f"Operand out of 8-bit range: {operand}")
+
+        machine_code.append((opcode << 8) | operand)
+        addr += 1
+
+    return machine_code
+
+
+def assemble_to_bytes(code: list[int]) -> bytearray:
+    result = bytearray()
+    for word in code:
+        result.append((word >> 8) & 0xFF)  # opcode
+        result.append(word & 0xFF)         # operand
+    return result
+
+
+if __name__ == "__main__":
+    # 示例程序：从1加到100
+    asm_code = """
+      LOAD IMMEDIATE 0
+      STORE 1
+      LOAD IMMEDIATE 1
+      STORE 2
+    LOOP: LOAD 1
+      ADD 2
+      STORE 1
+      LOAD 2
+      ADD IMMEDIATE 1
+      STORE 2
+      SUB IMMEDIATE 100
+      JGZ LOOP
+      HALT
+    """
+
+    lines = asm_code.strip().split('\n')
+    machine_words = parse_assembly(lines)
+    binary = assemble_to_bytes(machine_words)
+
+    # 打印每条机器码（16位）和最终二进制流
+    print("机器码:")
+    for i, word in enumerate(machine_words):
+        print(f"{i:02}: {word:04X}")
+
+    print("\n二进制比特流:")
+    print(" ".join(f"{b:08b}" for b in binary))
+    print("\nUART传输流:")
+    print("".join(f"0{b:08b}1" for b in binary))
+
+    
+
+  \end{lstlisting}
 \end{appendices}
 
 \end{document}

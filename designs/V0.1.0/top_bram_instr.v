@@ -6,24 +6,31 @@ module INIT_INSTR_BRAM (
     i_rst_n,
     i_rx,
     i_addr_read,
-    o_instr_read
+    o_instr_read,
+    o_instr_transmit_done
 );
-  input i_clk_uart;     // Board Freqency: 100MHz
-  input i_clk;          // CPU Frequency: 50MHz
-  input i_rst_n;        // Global Reset
+  input i_clk_uart;  // Board Freqency: 100MHz
+  input i_clk;  // CPU Frequency: 50MHz
+  input i_rst_n;  // Global Reset
+  input i_rx;
+  input [7:0] i_addr_read;
+  output [15:0] o_instr_read;
+  output o_instr_transmit_done;
 
   wire valid_uart;
   wire [7:0] data_uart;
   wire [15:0] data_bram;
   wire [7:0] addr_bram;
   wire enable_write_bram;
-
+  wire clear_uart;
+  wire clear_fifo;
   UART instr_load_uart (
       .i_clk_uart(i_clk_uart),
       .i_rst_n(i_rst_n),
       .i_rx(i_rx),
       .o_data(data_uart),
-      .o_valid(valid_uart)
+      .o_valid(valid_uart),
+      .o_clear_sign(clear_uart)
   );
 
   FIFO instr_load_fifo (
@@ -34,7 +41,8 @@ module INIT_INSTR_BRAM (
       .i_clk_rd(i_clk),
       .o_data_bram(data_bram),
       .o_addr_bram(addr_bram),
-      .o_wr_en_bram(enable_write_bram)
+      .o_wr_en_bram(enable_write_bram),
+      .o_fifo_empty(clear_fifo)
   );
 
   BRAM_INSTR instr_load_bram (
@@ -44,5 +52,6 @@ module INIT_INSTR_BRAM (
       .i_addr_read(i_addr_read),
       .o_instr_read(o_instr_read)
   );
-  
+
+  assign o_instr_transmit_done = clear_uart & clear_fifo;
 endmodule

@@ -2,7 +2,7 @@
 // Author: LiPtP
 // Description
 `timescale 1ns / 1ps
-module AsyncFIFO_UART_to_BRAM (
+module FIFO (
     i_rst_n,
     i_clk_wr,
     i_valid_uart,
