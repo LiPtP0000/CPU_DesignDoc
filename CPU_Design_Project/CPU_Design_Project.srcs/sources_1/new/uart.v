@@ -1,16 +1,22 @@
 `timescale 1ns / 1ps
 
 module UART (
-    input            i_clk,    
-    input            i_rst_n,  
-    input            i_rx,     // RX input from the serial port
-    output reg [7:0] o_data,   // Output data
-    output reg       o_valid   // Valid signal
+    i_clk_uart,
+    i_rst_n,
+    i_rx,
+    o_data,
+    o_valid
 );
 
+  input i_clk_uart;
+  input i_rst_n;
+  input i_rx;  // RX input from the serial port
+  output reg [7:0] o_data;  // Output data
+  output reg o_valid;  // Valid signal
+
   // Baud Rate Settings
-  parameter BAUD_RATE = 115200;  // Baud Rate
-  parameter CLK_FREQ = 100000000;  // Clock Frequency
+  parameter BAUD_RATE = 115200;
+  parameter CLK_FREQ = 100000000;
 
   localparam CLK_DIV = CLK_FREQ / BAUD_RATE;
 
@@ -30,7 +36,7 @@ module UART (
   reg [ 7:0] rx_shift_reg;
 
   // State transition & counter
-  always @(posedge i_clk or negedge i_rst_n) begin
+  always @(posedge i_clk_uart or negedge i_rst_n) begin
     if (!i_rst_n) begin
       current_state   <= IDLE;
       clk_div_counter <= 0;
@@ -46,7 +52,7 @@ module UART (
   end
 
   // Data receiver from RX
-  always @(posedge i_clk or negedge i_rst_n) begin
+  always @(posedge i_clk_uart or negedge i_rst_n) begin
     if (!i_rst_n) begin
       o_valid <= 0;
       o_data <= 8'b0;
@@ -60,10 +66,8 @@ module UART (
           end else begin
             next_state <= IDLE;
           end
-          // if no start bit detected in a baud cycle, turn o_valid to 0
-          if (clk_div_counter ==CLK_DIV - 1) begin
-            o_valid <= 0;
-          end
+          // o_valid last for one cycle
+          o_valid <= 0;
         end
 
         START: begin
@@ -108,5 +112,7 @@ module UART (
       endcase
     end
   end
+
+
 
 endmodule

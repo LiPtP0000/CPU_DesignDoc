@@ -1,14 +1,14 @@
 `timescale 1ns / 1ps
 
 module UART (
-    i_clk,
+    i_clk_uart,
     i_rst_n,
     i_rx,
     o_data,
     o_valid
 );
 
-  input i_clk;
+  input i_clk_uart;
   input i_rst_n;
   input i_rx;  // RX input from the serial port
   output reg [7:0] o_data;  // Output data
@@ -36,7 +36,7 @@ module UART (
   reg [ 7:0] rx_shift_reg;
 
   // State transition & counter
-  always @(posedge i_clk or negedge i_rst_n) begin
+  always @(posedge i_clk_uart or negedge i_rst_n) begin
     if (!i_rst_n) begin
       current_state   <= IDLE;
       clk_div_counter <= 0;
@@ -52,7 +52,7 @@ module UART (
   end
 
   // Data receiver from RX
-  always @(posedge i_clk or negedge i_rst_n) begin
+  always @(posedge i_clk_uart or negedge i_rst_n) begin
     if (!i_rst_n) begin
       o_valid <= 0;
       o_data <= 8'b0;
