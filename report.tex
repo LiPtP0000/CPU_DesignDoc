@@ -8,6 +8,7 @@
 \usepackage{longtable}
 \usepackage{lipsum}
 \usepackage{makecell}
+\usepackage{siunitx}
 % \usepackage[backend=biber, style=gb7714-2015]{biblatex}
 % \usepackage[title]{appendix}
 % \usepackage{subfigure}
@@ -592,7 +593,7 @@ CPU中总线、寄存器、内存和ALU等关键器件需要以合理的时序�
 
 \end{longtable}
 \section{I/O接口}
-\subsection{汇编代码解释}
+\subsection{用户端代码解释}
 目前采用\textbf{用户编写汇编代码}$\to$\textbf{转换为16位机器码}的方式输入指令。用户可在文本编辑器中编写类汇编代码，而解释器负责将其解释为机器码。
 
 以从1加到100的程序举例：
@@ -614,13 +615,69 @@ LOOP: LOAD 0             ; 读取当前累加值 → ACC=SUM
 
 代码最终将被解释为一串二进制比特流，解释服从：
 \begin{itemize}
+  \item 地址占1byte，Opcode占1byte；
   \item 含IMMEDIATE关键字的行，Opcode的MSB为1；
+  \item 将\textbf{换行符}作为一条指令结束的标志，它将被映射为一个全零byte；
   \item 在代码解释的过程中，\texttt{LOOP}应映射到相同行指令的地址。
 \end{itemize}
 
-拟采用Python语言对用户代码进行处理，处理好的比特流可通过UART串口通信传入FPGA的BRAM或写入coe文件。
+拟采用Python语言对用户代码进行处理，处理好的比特流可通过UART串口通信传入FPGA的BRAM。
 
-传入FPGA的所有指令将存于单独的内存中，与CPU内存隔离开来。CPU内存仅存数据，这符合用户编写的直观感受。每条存入内存的数据位宽为16，即每个地址按顺序存放一条指令。地址从1开始依次递增，防止复位时地址位初始化为0导致出错。指令写入在CPU开机之前，写入成功后开发板亮蓝灯。若在CPU运行时没有指令，则开发板亮红灯。
+
+\subsection{UART 接收与 指令RAM 写入设计}
+
+本设计基于 NEXYS 4 DDR 开发板，通过其板载的 UART 接口完成主机与 FPGA 之间的数据传输。该方案无需额外的数据线或 I/O 资源，即可实现对 FPGA 内部 RAM 的程序写入与指令输入，提升了系统的硬件集成度与使用便捷性。
+
+\subsubsection{UART 接收逻辑}
+
+开发板主系统时钟频率为 \SI{100}{\mega\hertz}，串口通信波特率设定为 \SI{115200}{bps}。根据 UART 通信协议，每接收 $1$ 位数据所需的时钟周期数为：
+
+\begin{equation}
+  \text{CLK\_BAUD} = \frac{\text{CLK\_FREQ}}{\text{BAUD\_RATE}} = \frac{100\,000\,000}{115200} \approx 868
+\end{equation}
+
+采用常见的 \textbf{8N1} 格式传输，即每帧包括：
+
+\begin{itemize}
+  \item 1 位起始位（Start Bit）；
+  \item 8 位数据位（Data Bits）；
+  \item 1 位停止位（Stop Bit）。
+\end{itemize}
+
+因此，每帧共 $10$ 位，总计需要约：
+
+\begin{equation}
+  \text{CLK\_FRAME} = 10 \times \text{CLK\_BAUD} = 10 \times 868 = 8680\ \text{cycles}
+\end{equation}
+
+接收端采用中点采样策略，即在每位传输中间时刻（约第 $434$ 个时钟周期）对数据位进行采样，以提升抗干扰能力。
+
+\subsubsection{数据缓冲与存储结构}
+
+为保证串口数据完整接收，接收模块首先将每帧数据写入异步 FIFO 缓冲区。随后由控制逻辑从 FIFO 中读取数据，并写入开发板内部的块 RAM（通过 Vivado IP 核生成）。
+
+\paragraph{数据写入格式：}
+
+\begin{itemize}
+  \item RAM 的每个地址对应两个字节（16 位）数据；
+  \item 高字节为操作码（Opcode），低字节为立即数或地址（Operand）；
+  \item 若当前行含有 \texttt{IMMEDIATE} 关键字，则 Opcode 的最高位（MSB）为 $1$。
+\end{itemize}
+
+\paragraph{写入控制规则：}
+
+\begin{itemize}
+  \item 接收到 \texttt{0x00} 字节（全 0）后，代表当前指令输入结束，RAM 地址计数器自增 1；
+  \item RAM 地址从地址 1 开始顺序写入，地址 0 预留用于程序入口或特殊用途；
+  \item 程序中如含有 \texttt{LOOP} 标签，将在 RAM 地址分配完毕后由软件在解析阶段回填其地址位置。
+\end{itemize}
+
+另外，传入FPGA的所有指令将存于单独的内存中，与CPU内存隔离开来。CPU内存仅存数据，这符合用户编写的直观感受。每条存入内存的数据位宽为16，即每个地址按顺序存放一条指令。地址从1开始依次递增，防止复位时地址位初始化为0导致出错。指令写入在CPU开机之前，写入成功后开发板亮蓝灯。若在CPU运行时没有指令，则开发板亮红灯。
+
+本模块通过串口实现了简洁的二进制指令数据装载方式，降低了外设复杂性，为后续的控制单元译码与执行单元操作提供了明确的数据支持。
+
+\subsection{用户交互设计}
+该部分描述用户与FPGA的交互接口（按钮、按键等）以及看到的运行状态信息与结果显示设计。
 \section{流水线架构与优化策略}
 \subsection{总体架构}
 为了加速CPU的指令执行速度，采用\textbf{5级同步流水线}完成CPU执行指令的全流程。分别为：取指令（IF），指令译码（ID），指令执行（EX），内存访问（MEM）和写回寄存器（WB）五个阶段。流水线的五个阶段如下所示。
@@ -679,6 +736,43 @@ $$
 % 流水线设计下会出现内存读写冲突等，需要实现冲突现象的检测模块。同时，如果没有流水线优化策略，则每次访问冲突都需要清空流水线，这会降低流水线的运行效率。
 
 \section{模块设计}
+\subsection{UART传输与指令写入}
+\subsubsection{UART模块}
+\paragraph{模块功能：}
+将用户输入代码比特流（8N1格式）译码为1字节数据。
+\paragraph{模块外部接口：}
+
+\begin{longtable}{>{\bfseries}c c c c}
+  \toprule
+  信号名 & 方向 & 位宽 & 描述 \\
+  \midrule
+  \endhead
+  
+  \texttt{i\_clk}   & 输入  & 1      & 系统时钟信号 \\
+  \texttt{i\_rst\_n} & 输入  & 1      & 全局复位信号 \\
+  \texttt{i\_rx}    & 输入  & 1      & UART 接收引脚 \\
+  \texttt{o\_data}  & 输出  & 8    & 接收到的一帧数据 \\
+  \texttt{o\_valid} & 输出  & 1      & 数据有效标志，高电平表示 \texttt{o\_data} 可用 \\
+  \bottomrule
+  \end{longtable}
+
+\subsubsection{FIFO模块}
+\paragraph{模块功能：}
+缓存UART数据，当读入2字节数据时FIFO满，存入BRAM。
+\paragraph{模块外部接口：}
+\begin{longtable}{>{\bfseries}c c c c}
+  \toprule
+  信号名 & 方向 & 位宽 & 描述 \\
+  \midrule
+  \endhead
+  
+  \texttt{i\_clk}   & 输入  & 1      & 系统时钟信号 \\
+  \texttt{i\_rst\_n} & 输入  & 1      & 全局复位信号 \\
+  \texttt{i\_rx}    & 输入  & 1      & UART 接收引脚 \\
+  \texttt{o\_data}  & 输出  & 8    & 接收到的一帧数据 \\
+  \texttt{o\_fifo\_full} & 输出  & 1      & 高电平表示FIFO满 \\
+  \bottomrule
+  \end{longtable}
 \subsection{时钟、复位与停止信号}
 CPU由\textbf{全局同步时钟}控制，所有控制逻辑与计算逻辑全部在时钟上升沿进行。CPU设有\textbf{全局异步复位}信号，低电平有效。当异步复位时，内存中除指令集数据以外所有数据清空，所有寄存器清空，控制信号全部归为断开（0）。
 
