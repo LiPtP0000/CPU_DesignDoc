@@ -77,7 +77,8 @@ module UART (
         end
 
         DATA: begin
-          if (clk_div_counter == CLK_DIV - 1) begin
+          // sample at middle point
+          if (clk_div_counter == CLK_DIV / 2) begin
             rx_shift_reg <= {i_rx, rx_shift_reg[7:1]};  // descending order
             bit_counter  <= bit_counter + 1;
 
