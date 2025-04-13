@@ -35,13 +35,13 @@ module UART (
 
   // Counters
   reg [15:0] clk_div_counter;
-  reg [3:0] bit_counter;
+  reg [ 4:0] bit_counter;
   reg [25:0] rx_no_data_counter;
   // Data Receiver
-  reg [7:0] rx_shift_reg;
+  reg [ 7:0] rx_shift_reg;
 
   // registers of clear flag
-  reg clear_state;
+  reg clear, clear_state;
 
   // State transition & counter
   always @(posedge i_clk_uart or negedge i_rst_n) begin
@@ -59,87 +59,108 @@ module UART (
       end
     end
   end
+  // State Transitions
+  always @(posedge i_clk_uart or negedge i_rst_n) begin
+    if (!i_rst_n) begin
+      current_state <= IDLE;
+      next_state <= IDLE;
+    end else begin
+      case (current_state)
+        IDLE: begin
+          if (i_rx == 0) begin
+            next_state <= START;
+          end else begin
+            next_state <= IDLE;
+          end
+        end
+        START: begin
+          next_state <= DATA;
+        end
+        DATA: begin
+          if (bit_counter == 9) next_state <= STOP;
+          else next_state <= DATA;
+
+        end
+        STOP: begin
+          if (clk_div_counter == CLK_DIV - 1) begin
+            next_state <= IDLE;
+          end
+        end
+        default: next_state <= IDLE;
+      endcase
+    end
+
+  end
 
   // Data receiver from RX
   always @(posedge i_clk_uart or negedge i_rst_n) begin
     if (!i_rst_n) begin
-      o_valid <= 0;
-      o_data <= 8'b0;
+
+      clk_div_counter <= 0;
       bit_counter <= 0;
-      rx_shift_reg <= 8'b0;
-      rx_no_data_counter <= 0;
-      clear <= 1'b0;
-      clear_state <= 1'b0;
+      rx_shift_reg <= 8'd0;
+      o_valid <= 0;
+      o_data <= 8'd0;
+
     end else begin
-      case (current_state)
-        IDLE: begin
-          if (i_rx == 0) begin  // Wait for start bit 0
-            next_state <= START;
-            clear <= 1'b0;
-            clear_state <= 1'b1;
-          end else begin
-            next_state <= IDLE;
+      if (clk_div_counter == CLK_DIV >> 1 && current_state == DATA) begin
+        rx_shift_reg <= {rx_shift_reg[6:0], i_rx};
+      end
+
+      if (clk_div_counter == CLK_DIV - 1) begin
+        case (current_state)
+          IDLE: begin
+            bit_counter <= 0;
+          end
+          START: begin
+            bit_counter <= 0;
           end
 
-          // o_valid last for one cycle
-          o_valid <= 0;
-
-          // no data counter
-          if (rx_no_data_counter == MAX_WAITING_CLK - 1) begin
-            rx_no_data_counter <= 0;
-            clear <= 1'b1;
-          end else begin
-            rx_no_data_counter <= rx_no_data_counter + 1;
+          DATA: begin
+            bit_counter <= bit_counter + 1;
           end
 
-        end
-
-        START: begin
-          if (clk_div_counter == CLK_DIV - 1) begin
-            next_state   <= DATA;
-            bit_counter  <= 0;
-            rx_shift_reg <= 0;
-          end else begin
-            next_state <= START;
-          end
-        end
-
-        DATA: begin
-          // sample at middle point
-          if (clk_div_counter == CLK_DIV / 2) begin
-            rx_shift_reg <= {i_rx, rx_shift_reg[7:1]};  // descending order
-            bit_counter  <= bit_counter + 1;
-
-            if (bit_counter == 7) begin  // receiver done
-              next_state <= STOP;
-            end else begin
-              next_state <= DATA;
-            end
-          end else begin
-            next_state <= DATA;
-          end
-        end
-
-        STOP: begin
-          if (clk_div_counter == CLK_DIV - 1) begin
-            if (i_rx == 1) begin  // Stop bit is 1
+          STOP: begin
+            if (i_rx == 1) begin
               o_data  <= rx_shift_reg;
               o_valid <= 1;
             end
-            next_state <= IDLE;
-            rx_no_data_counter <= 0;  // only for reset
-          end else begin
-            next_state <= STOP;
           end
-        end
-
-        default: next_state <= IDLE;
-      endcase
+        endcase
+      end else begin
+        // make sure it only takes one byte
+        o_valid <= 0;
+      end
     end
   end
 
+
   // Assignments
   // activates when a transmission is over and 0.5s past with no more transmission begins.
+  always @(posedge i_clk_uart or negedge i_rst_n) begin
+    if (!i_rst_n) begin
+      clear <= 0;
+      clear_state <= 0;
+      rx_no_data_counter <= 0;
+    end else begin
+      case (current_state)
+        IDLE: begin
+          // Counter of IDLE
+          if (rx_no_data_counter == MAX_WAITING_CLK) begin
+            rx_no_data_counter <= 0;
+            clear <= 1;
+          end else begin
+            rx_no_data_counter <= rx_no_data_counter + 1;
+          end
+        end
+        // At least a byte is read
+        default: begin
+          clear_state <= 1;
+          clear <= 0;
+        end
+      endcase
+    end
+  end
   assign o_clear_sign = clear & clear_state;
 
 

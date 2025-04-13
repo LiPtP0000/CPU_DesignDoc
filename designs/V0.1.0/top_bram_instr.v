@@ -50,7 +50,8 @@ module INIT_INSTR_BRAM (
       .en_write(enable_write_bram),
       .i_addr_write(addr_bram),
       .i_addr_read(i_addr_read),
-      .o_instr_read(o_instr_read)
+      .o_instr_read(o_instr_read),
+      .i_instr_write(data_bram)
   );
 
   assign o_instr_transmit_done = clear_uart & clear_fifo;

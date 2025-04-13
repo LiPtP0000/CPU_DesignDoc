@@ -5,7 +5,8 @@ module BRAM_INSTR (
     en_write,
     i_addr_write,
     i_addr_read,
-    o_instr_read
+    o_instr_read,
+    i_instr_write,
 );
   input i_clk;
   input en_write;  // flag of write instructions.

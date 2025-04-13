@@ -1,6 +1,5 @@
 // Date: 25.4.13
 // Author: LiPtP
-// Description
 `timescale 1ns / 1ps
 module FIFO (
     i_rst_n,
@@ -100,14 +99,15 @@ module FIFO (
           o_wr_en_bram <= 1;
           byte_flag    <= 0;
         end
-
-      end else if (byte_flag) begin
-        // if there are odd bytes from UART, fill zero
-        o_data_bram  <= {data_buffer, 8'h00};
-        o_addr_bram  <= o_addr_bram + 1;
-        o_wr_en_bram <= 1;
-        byte_flag    <= 0;
       end
+
+      //   end else if (byte_flag) begin
+      //     // if there are odd bytes from UART, fill zero
+      //     o_data_bram  <= {data_buffer, 8'h00};
+      //     o_addr_bram  <= o_addr_bram + 1;
+      //     o_wr_en_bram <= 1;
+      //     byte_flag    <= 0;
+      //   end
     end
   end
 
