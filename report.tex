@@ -12,10 +12,8 @@
 \usepackage{tikz-timing}
 \usepackage{tikz}
 \usepackage[table]{xcolor}
-% \usepackage[backend=biber, style=gb7714-2015]{biblatex}
-% \usepackage[title]{appendix}
-% \usepackage{subfigure}
-% \usepackage{subfloat}
+% \usepackage[backend=biber,style = gb7714-2015]{biblatex}
+\addbibresource{reference.bib} % 参考文献，不要删除
 \renewcommand{\listtablename}{表格目录}
 \renewcommand{\appendixname}{附录~\Alph{section}}
 
@@ -67,7 +65,8 @@
 % 本文档命令
 \usepackage{array}
 \newcommand{\ccr}[1]{\makecell{{\color{#1}\rule{1cm}{1cm}}}}
-\addbibresource[location=local]{reference.bib} % 参考文献，不要删除
+
+
 
 \begin{document}
 

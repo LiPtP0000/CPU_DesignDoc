@@ -22,7 +22,7 @@
 \DeclareStringOption[cm]{math}
 
 \DeclareStringOption[numeric-comp]{citestyle}
-\DeclareStringOption[numeric]{bibstyle}
+\DeclareStringOption[gb7714-2015]{bibstyle}
 
 \DeclareStringOption[biber]{bibend}
 \DeclareVoidOption{biber}{\ekv{bibend=biber}}
