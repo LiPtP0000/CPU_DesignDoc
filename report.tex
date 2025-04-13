@@ -9,6 +9,8 @@
 \usepackage{lipsum}
 \usepackage{makecell}
 \usepackage{siunitx}
+\usepackage{tikz-timing}
+\usepackage{tikz}
 \usepackage[table]{xcolor}
 % \usepackage[backend=biber, style=gb7714-2015]{biblatex}
 % \usepackage[title]{appendix}
@@ -43,13 +45,24 @@
   framerule=0.5mm,  % 框线宽度
   rulesepcolor=\color{black},  % 分隔线颜色
   captionpos=b,  % 标题位置（b: bottom）
+  }
+
+
+  \tikzset{
+  timing/name/.cd,
+  I/.style={fill=blue!20},    % IF阶段
+  D/.style={fill=green!20},   % ID阶段
+  F/.style={fill=red!20},     % FO阶段
+  N/.style={fill=yellow!20},  % IND阶段
+  E/.style={fill=orange!20},  % EX阶段
+  W/.style={fill=purple!20}   % WB阶段
 }
 % \renewcommand{\refname}{参考文献}
 \title{计算机组织与结构II：CPU设计文档}
 \author{李勃璘 \\ 吴健雄学院}
 
 \version{1.1}
-\date{\zhdate{2025/4/11}}
+\date{\zhdate{2025/4/14}}
 
 % 本文档命令
 \usepackage{array}
@@ -61,7 +74,7 @@
 \maketitle
 \thispagestyle{empty}
 \begin{abstract}
-本设计文档详细阐述了一款基于 五级流水线 的 CPU 体系结构及其 Verilog 实现。CPU 采用 取指（IF）、译码（ID）、执行（EX）、访存（MEM）、写回（WB） 五级流水线，以提高指令执行效率。文档首先介绍了 CPU 的总体架构，包括 时钟与复位机制、关键存储单元、内部数据通路与控制信号，并详细说明了 指令集架构 及其编码格式。随后，针对流水线执行过程中可能出现的 数据冒险、控制冒险、流水线暂停 等问题，提出了 旁路（Forwarding）、分支预测（Branch Prediction）、冒险检测（Hazard Detection） 等优化方案，并给出了相应的 Verilog 设计。最后，文档分析了 CPU 与内存、总线及外部控制信号 的交互方式，并探讨了 Verilog 在 FPGA 上的实现方案。该设计通过流水线优化与高效控制信号管理，提升了 CPU 的吞吐率，为后续硬件优化和扩展提供了良好的基础。
+
 \end{abstract}
 
 % Removed
@@ -97,7 +110,8 @@
 \section{概述}
 \lipsum[5]\footnote{手搓CPU是人类文明的伟大工程 —— 沃兹基硕德}
 
-
+\subsection{时间安排}
+文献\cite{timeline}设计并实施了一个基于FPGA的五级流水线MIPS CPU课程项目，通过阶段性进度安排和动手实践，有效提升了学生对计算机体系结构的理解和项目完成率。受该工作的启发，本文针对本项目制定了工作安排如表所示。
 \section{CPU结构设计}
 \subsection{总体架构}
 CPU由控制单元（CU），逻辑运算单元（ALU），内存（Memory）和寄存器组（Registers）组成，除内存以外，其余单元由被CU生成的控制信号控制的数据通路（Data Path）连接。另外，MAR和MBR分别还和地址总线、数据总线相连接，用于与内存交互。控制单元和内存都和控制总线相连接，用于与外部控制信号交互。
@@ -114,7 +128,7 @@ CPU由控制单元（CU），逻辑运算单元（ALU），内存（Memory）和
 \subsubsection{位宽设计}
 地址段长为\textbf{8}位，指令码（Opcode）宽度为\textbf{8}位。因此，每一条指令的位宽为\textbf{16}位。
 \subsubsection{寻址方式}
-寻址方式指对地址段数据的解释方式。寻址方式由对应指令指定，支持表~\ref{tab:ISA:addressingmode}~中的全部寻址方式。由于给定的指令集高四位均空闲，使用最高位存储支持的寻址方式。
+寻址方式指对地址段数据的解释方式。寻址方式由对应指令指定，支持表~\ref{tab:ISA:addressingmode}~中的全部寻址方式。由于给定的指令集高四位均空闲，使用最高位存储支持的寻址方式。目前设计中指令码的最高位为1时，寻址方式为立即数寻址；指令码的最高位为0时，寻址方式为直接寻址。
 \begin{longtable}{c c c}
   \caption{指令集支持的寻址方式} \label{tab:ISA:addressingmode} \\
   \toprule
@@ -141,7 +155,7 @@ CPU由控制单元（CU），逻辑运算单元（ALU），内存（Memory）和
 \end{longtable}
 
 \subsubsection{指令集支持的指令}
-指令集共支持13条不同的指令，列于表~\ref{tab:ISA:instructions}。每一条指令包含一个指令码，使用16进制格式存储。指令码的最高位为1时，寻址方式为立即数寻址；指令码的最高位为0时，寻址方式为直接寻址。\footnote{指令中含*的仅支持直接寻址，因为立即数寻址对这些指令无意义。含$^\circledast$的仅支持立即数寻址。}
+指令集共支持13条不同的指令，列于表~\ref{tab:ISA:instructions}。每一条指令包含一个指令码，使用二进制格式存储。\footnote{指令中含*的仅支持直接寻址，因为立即数寻址对这些指令无意义。含$^\circledast$的仅支持立即数寻址。}
   
 
 
@@ -611,7 +625,7 @@ LOOP: LOAD 0             ; 读取当前累加值 → ACC=SUM
 
 \subsubsection{数据缓冲与存储结构}
 
-为保证串口数据完整接收，接收模块首先将每帧数据写入异步 FIFO 缓冲区。随后由控制逻辑从 FIFO 中读取数据，并写入开发板内部的块 RAM（通过 Vivado IP 核生成）。
+为保证串口数据完整接收，接收模块首先将每帧数据写入异步 FIFO 缓冲区。随后由控制逻辑从 FIFO 中读取数据，并写入开发板内部的块 RAM。
 
 \paragraph{数据写入格式：}
 
@@ -624,7 +638,7 @@ LOOP: LOAD 0             ; 读取当前累加值 → ACC=SUM
 \paragraph{写入控制规则：}
 
 \begin{itemize}
-  \item 每一条指令都为2byte指令，即使其可能没有操作数。对于没有操作数的情况，将操作数位置补零。
+  \item 每一条指令都为2byte指令，对于没有操作数的情况，将操作数位置补零。
   \item RAM 地址从地址 0 开始顺序写入。
   \item 程序中如含有 \texttt{LOOP} 标签，将在 RAM 地址分配完毕后由软件在解析阶段回填其地址位置。
 \end{itemize}
@@ -692,7 +706,7 @@ LOOP: LOAD 0             ; 读取当前累加值 → ACC=SUM
 
 \end{longtable}
 \section{流水线架构与优化策略}
-\subsection{总体架构}
+\subsection{流水线阶段}
 为了加速CPU的指令执行速度，采用\textbf{6级同步流水线}完成CPU执行指令的全流程。分别为：取指令（IF），指令译码（ID），取操作数（FO），间址（IND），指令执行（EX）和写回寄存器（WB）六个阶段。流水线的六个阶段如下所示。
 $$
   \text{IF} \rightarrow \text{ID} \rightarrow \text{FO}\rightarrow \text{IND} \rightarrow \text{EX} \rightarrow \text{WB}
@@ -746,7 +760,13 @@ $$
 \subsection{流水线冒险}
 包含三种冒险情况：结构冒险、数据冒险、控制冒险（分支冒险）。\cite{zhihu453232311}
 
-结构冒险，即\textbf{某指令引用了前一次的运算结果，但其结果值还未产生}。对于这种情况，采用旁路（Forwarding）技术解决。
+结构冒险，即\textbf{两条指令共同访问了一个外围设备，不支持同时读取/写入的情况。}在本设计中，由于采用哈佛结构，指令ROM和数据RAM分开，并使用不同的数据总线和地址总线，因此不会出现结构冒险。
+
+数据冒险，即\textbf{某指令引用了前一次的运算结果，但其结果值还未产生}。常见的数据冒险包括读后写 (Read After Write)，写后读(WAR, Write After Read) 和 写后写(WAW, Write After Write)冲突。在顺序流水线设计中，后两种数据冒险不常见。
+
+控制冒险，即 \textbf{由于程序中存在分支、跳转等控制流改变的指令，导致流水线提前取到的指令可能是错误的}。当遇到分支指令时，流水线可能已经开始执行接下来的几条指令，而此时是否跳转还不确定，如果最终确实发生了跳转，这些指令将被作废，必须清空流水线并从正确的地址重新取指。为了解决控制冒险，本设计中采用了分支预测技术，提前猜测分支是否发生，并按照预测结果继续执行流水线，若预测正确则无需清空流水线，提高了效率；若预测失败，则需要清空错误的指令并重新取指。
+\subsection{流水线优化：前递与旁路}
+为了解决数据冒险，一般而言采用\textbf{插入空指令（NOP）}的方式。在本设计中，NOP的控制信号为全0，存放于CU的ROM第255个地址处（全1地址）。然而插入空指令降低了流水线的效率，为了提升效率，需要找到更好的解决方式。
 \subsection{流水线优化：分支预测}
 在本设计中，为了减少分支指令（JMP，JGZ）带来的流水线Flush和延迟，采用1比特分支预测进行流水线优化。
 
@@ -782,11 +802,95 @@ $$
   \end{algorithmic}
 \end{algorithm}
 
+\begin{figure}[htbp]
+  \centering
+  \caption{流水线优化策略举例} \label{fig:pipeline:example}
+  \begin{tikzpicture}[x=0.8cm, y=0.8cm]
 
-% \subsubsection{流水线优化}\label{sec:streamline}
-% 流水线设计下会出现内存读写冲突等，需要实现冲突现象的检测模块。同时，如果没有流水线优化策略，则每次访问冲突都需要清空流水线，这会降低流水线的运行效率。
 
-\section{模块设计}
+
+    % % 指令标签
+    \node[anchor=east] at (0.5,-1.5) {\textbf{LOAD}~1};
+    \node[anchor=east] at (0.5,-2.5) {\textbf{ADD}~2};
+    \node[anchor=east] at (0.5,-3.5) {\textit{STALL}};
+    \node[anchor=east] at (0.5,-4.5) {\textbf{STORE}~1};
+    \node[anchor=east] at (0.5,-5.5) {\textbf{SUB}~3};
+    \node[anchor=east] at (0.5,-6.5) {\textbf{JGZ}~LOOP};
+    \node[anchor=east] at (0.5,-7.5) {\textit{INSTR\_AFTER}};
+    \node[anchor=east] at (0.5,-8.5) {\textit{(FLUSH)}};
+    
+      
+      % 指令的执行阶段（用方块）
+      \newcommand{\drawstage}[3]{ % #1: x位置，#2: y位置，#3: 字母
+        \draw[fill=blue!20] (#1,-#2) rectangle ++(1,-1);
+        \node at (#1+0.5,-#2-0.5) {\textbf{#3}};
+      }
+      
+      % 手动绘制流水线阶段
+      %              x, y, 阶段
+      \drawstage{1}{1}{I}
+      \drawstage{2}{1}{D}
+      \drawstage{3}{1}{F}
+      \drawstage{4}{1}{N}
+      \drawstage{5}{1}{E}
+      \drawstage{6}{1}{W}
+      
+      \drawstage{2}{2}{I}
+      \drawstage{3}{2}{D}
+      \drawstage{4}{2}{F}
+      \drawstage{5}{2}{N}
+      \drawstage{6}{2}{E}
+      \drawstage{7}{2}{W}
+      
+      % Stall 插入
+      \draw[fill=gray!30] (3,-3) rectangle ++(1,-1);
+      \node at (3.5,-3.5) {\textbf{Stall}};
+      
+      \drawstage{4}{4}{I}
+      \drawstage{5}{4}{D}
+      \drawstage{6}{4}{F}
+      \drawstage{7}{4}{N}
+      \drawstage{8}{4}{E}
+      \drawstage{9}{4}{W}
+      
+      \drawstage{5}{5}{I}
+      \drawstage{6}{5}{D}
+      \drawstage{7}{5}{F}
+      \drawstage{8}{5}{N}
+      \drawstage{9}{5}{E}
+      \drawstage{10}{5}{W}
+      
+      \drawstage{6}{6}{I}
+      \drawstage{7}{6}{D}
+      \drawstage{8}{6}{F}
+      \drawstage{9}{6}{N}
+      \drawstage{10}{6}{E}
+      \drawstage{11}{6}{W}
+      
+      % Flush显示
+      \foreach \i in {7,8,9,10,11,12} {
+        \draw[fill=red!20] (\i,-7) rectangle ++(1,-1);
+        \node at (\i+0.5,-7.5) {X};
+      }
+      
+      % 注释箭头和文字
+      \draw[->, thick, blue] (5.5,-1.5) -- (5.5,-2.2);
+      \node[anchor=west, font=\small, color = blue] at (8.6,-1) {前递：ADD使用LOAD结果};
+      
+      \draw[->, thick, gray] (3.5,-2.5) -- (3.5,-3.2);
+      \node[anchor=west, font=\small, color = gray] at (8.6,-1.75) {Stall：等待LOAD结果};
+      
+      \draw[->, thick, orange] (9.5,-5.5) -- (9.5,-6.2);
+      \node[anchor=west, font=\small,color = orange] at (8.6,-2.5) { 分支预测：假设跳转};
+      
+      \draw[->, thick, red] (10.5,-6.5) -- (10.5,-7.2);
+      \node[anchor=west, font=\small,color = red] at (8.6,-3.25) { Flush：跳转错误清空};
+      
+      \end{tikzpicture}
+\end{figure}
+
+
+\section{核心模块设计}
 \subsection{时钟、复位与停止信号}
 CPU由\textbf{全局同步时钟}控制，时钟主频为50MHz。除复位信号外，所有控制逻辑与计算逻辑全部在时钟上升沿进行。UART传输部分使用100MHz的时钟主频。
 
@@ -801,7 +905,7 @@ CPU设有\textbf{全局异步复位}信号，低电平有效。当异步复位�
 \begin{itemize}
   \item 模块名：\texttt{UART}
   \item 最新更新日期：\texttt{4.13}
-  \item 是否经过测试：否
+  \item 是否经过测试：是
 \end{itemize}
 \paragraph{模块功能：}
 将用户输入代码比特流（8N1格式）译码为1字节数据。
@@ -834,7 +938,7 @@ CPU设有\textbf{全局异步复位}信号，低电平有效。当异步复位�
 \begin{itemize}
   \item 模块名：\texttt{FIFO}
   \item 最新更新日期：\texttt{4.13}
-  \item 是否经过测试：否
+  \item 是否经过测试：是
 \end{itemize}
 \paragraph{模块功能：}
 异步FIFO，缓存UART数据。将每两个读出的UART数据拼成2字节的指令输出给BRAM。
@@ -872,7 +976,7 @@ CPU设有\textbf{全局异步复位}信号，低电平有效。当异步复位�
 \begin{itemize}
   \item 模块名：\texttt{BRAM\_INSTR}
   \item 最新更新日期：\texttt{4.13}
-  \item 是否经过测试：否
+  \item 是否经过测试：是
 \end{itemize}
 \paragraph{模块功能：}
 描述一指令块RAM，可存放256条2byte指令。读写双口，拥有写使能（FIFO传入）。外部设备可通过地址读取对应地址的2byte指令。
