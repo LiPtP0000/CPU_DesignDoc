@@ -1,3 +1,4 @@
+// Author: Guangyu Feng
 `timescale 1ns/1ps
 
 module tb_INIT_INSTR_BRAM;
@@ -63,7 +64,7 @@ module tb_INIT_INSTR_BRAM;
     integer i;
     begin
       // 起始位
-      i_rx = 0;  #(8680);  // 假设 baud rate = 9600bps, 1bit=104us
+      i_rx = 0;  #(8680); 
       // 8数据位
       for (i = 0; i < 8; i = i + 1) begin
         i_rx = data[i];
