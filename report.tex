@@ -642,7 +642,7 @@ LOOP: LOAD 0             ; 读取当前累加值 → ACC=SUM
 
 采用Harvard结构，内存中\textcolor{red}{不存放待执行指令}。待执行指令存放于另一块内存中，防止数据通路和指令通路发生冲突。
 \subsection{总线与外部控制信号}\label{sec:ExternalControl}
-
+对于指令RAM和数据RAM，各自包含一条与CPU的地址总线和数据总线。前者的数据总线是单向通往CPU的，而后者则为双向总线。
 \subsubsection{地址总线}
 地址总线为\textbf{8}位单向总线，提供CPU（即MAR）到内存的地址传送通路。由于其为单向总线，仅需内存侧读使能信号与CPU侧MAR的控制信号控制即可，无需复用。
 \subsubsection{数据总线}
@@ -701,18 +701,56 @@ $$
 流水线各阶段的主要工作如下：
 \begin{itemize}
   \item \textbf{IF(Instruction Fetch):}从指令存储器中取出指令，同时确定下一条指令地址（指针指向下一条指令）；
-  \item \textbf{ID(Instruction Decode):}翻译指令，同时让计算机得出要使用的寄存器，或者让立即数进行拓展（方便后续指令执行），亦或者（转移指令）是给出转移目的寄存器与转移条件；
+  \item \textbf{ID(Instruction Decode):}翻译指令，同时让计算机得出要使用的寄存器，得出寻址方式，亦或者（转移指令）是给出转移目的寄存器与转移条件；
+  \item \textbf{FO(Fetch Operands):}取立即操作数到MBR，即指令的低8位。
+  \item \textbf{IND(Indirect):}间接寻址周期，每插入一个IND周期则间接寻址深度+1。不插入IND周期则为立即数寻址。在本设计中由于不考虑间接寻址，因此最多只有1个IND周期。\textbf{立即数寻址的指令将跳过这一阶段。}
   \item \textbf{EX(Execution):}按照微操作指令指示打开数据通路。
-  \item \textbf{MEM(Memory):}若为\texttt{LOAD/STORE}指令，这个阶段就要访问存储器。此外，指令从EX向下执行到WB阶段。另外，在这个阶段还要判定是否有异常要处理，如果有，那么就清除流水线，然后转移到异常处理例程入口地址处继续执行。
   \item \textbf{WB(Write Back):}将运算结果保存到目标寄存器。
 \end{itemize}
+
+因此，对于每一条指令，都会经历上述六个指令周期中的一部分，而由表~\ref{tab:five_stage_pipeline_ctrl}~可知，其中IF和ID部分所有指令公用相同的微操作指令。
 \subsection{流水线寄存器}
+为了使多条指令各阶段的数据在转换时可以保存，避免出现输出数据被覆盖的情况，需要设立5个流水线寄存器贮存上一阶段的输出。为方便起见，这些寄存器命名统一为“阶段1\_阶段2\_SHIFT\_REG”的方式。
+
+每一个寄存器所贮存的内容应当至少支撑起下一阶段的输入，基于此原则，可以给出每个转移寄存器所需贮存的内容如表~\ref{tab:pipeline:shiftreg}。
+\begin{longtable}{c c c}
+  \caption{流水线寄存器功能一览} \label{tab:pipeline:shiftreg} \\
+  \toprule
+  转移寄存器 & 贮存内容（高位到低位）  & 位宽   \\
+  \midrule
+  \endfirsthead
+
+  \caption[]{（续表）流水线寄存器功能一览} \\
+  \toprule
+  转移寄存器 & 贮存内容（高位到低位）  & 位宽  \\
+  \midrule
+  \endhead
+
+  \midrule
+  \multicolumn{3}{r}{续下页} \\
+  \midrule
+  \endfoot
+
+  \bottomrule
+  \endlastfoot
+
+  IF\_ID\_SHIFT\_REG  & PC/IR   & 24  \\
+  ID\_FO\_SHIFT\_REG  & PC    & MBR  \\
+  FO\_IND\_SHIFT\_REG  & PC    & MAR  \\
+  IND\_EX\_SHIFT\_REG  & MBR   & 16  \\
+  EX\_WB\_SHIFT\_REG  & MBR   & IR  \\
+  WB\_OUT\_SHIFT\_REG & 指令的输出结果：ACC/MR/Flags & 36
+
+\end{longtable}
+
 \subsection{流水线冒险}
 包含三种冒险情况：结构冒险、数据冒险、控制冒险（分支冒险）。\cite{zhihu453232311}
 
 结构冒险，即\textbf{某指令引用了前一次的运算结果，但其结果值还未产生}。对于这种情况，采用旁路（Forwarding）技术解决。
 \subsection{流水线优化：分支预测}
-在本设计中，采用1比特分支预测进行流水线优化。分支预测的控制信号由\textbf{控制总线}输入到CU中。分支预测的步骤如算法~\ref{alg:1bitBP}。
+在本设计中，为了减少分支指令（JMP，JGZ）带来的流水线Flush和延迟，采用1比特分支预测进行流水线优化。
+
+分支预测发生在分支指令执行至\textbf{ID}阶段时。CU在译码后发现其为跳转类指令，就会向Branch Predictor发送一个信号，要求进行分支预测。分支预测的结果决定接下来流水线中IF阶段读取指令的地址，但若在EX阶段发现预测结果和实际结果不一致，则对已抓取的所有指令清空（Flush）。分支预测的具体步骤如算法~\ref{alg:1bitBP}。
 
 \begin{algorithm}[htbp]
   \caption{1-bit 分支预测}
