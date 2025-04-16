@@ -159,13 +159,13 @@ CPU由控制单元（CU），逻辑运算单元（ALU），内存（Memory）和
 
 
 \begin{longtable}{c c c}
-  \caption{指令集包含指令及功能（直接寻址下）} \label{tab:ISA:instructions} \\
+  \caption{指令集包含指令及功能} \label{tab:ISA:instructions} \\
   \toprule
   助记符  & 指令码（低四位） & 描述 \\
   \midrule
   \endfirsthead
   
-  \caption[]{（续表）指令集包含指令及功能（直接寻址下）} \\
+  \caption[]{（续表）指令集包含指令及功能} \\
   \toprule
   助记符  & 指令码（低四位） & 描述 \\
   \midrule
@@ -179,19 +179,19 @@ CPU由控制单元（CU），逻辑运算单元（ALU），内存（Memory）和
   \bottomrule
   \endlastfoot
   
-  *STORE X &  0001   & [X] $\leftarrow$ ACC  \\
-  *LOAD X  & 0010    & ACC $\leftarrow$ [X]  \\
-  ADD X   & 0011    & ACC $\leftarrow$ ACC + [X]\\
-  SUB X   & 0100  & ACC $\leftarrow$ ACC - [X]\\
-  JGZ X   & 0101    & ZF 和 NF 均为 0   ? PC $\leftarrow$ X : PC $\leftarrow$ PC + 1\\
-  JMP X   & 0110    & PC $\leftarrow$ X\\
-  $^\circledast$HALT    & 0111    & Stop\\
-  MPY X   & 1000    & MR, ACC $\leftarrow$ ACC * [X]，MR用于存储高16位 \\
-  AND X   & 1001    & ACC $\leftarrow$ ACC \& [X]\\
-  OR X    & 1010    & ACC $\leftarrow$ ACC | [X]\\
-  NOT X   & 1011    & ACC $\leftarrow$ \~[X] \\
-  $^\circledast$ SHIFTR  & 1100    & ACC $\leftarrow$ ACC $>>>$ 1，算术右移\\
-  $^\circledast$ SHIFTL  & 1101    & ACC $\leftarrow$ ACC $<<<$ 1，算术左移\\
+  *STORE X &  0001   & 结果存入\textbf{数据地址}X \\
+  *LOAD X  & 0010    & 加载\textbf{数据地址}X \\
+  ADD X   & 0011    & 定点数加法\\
+  SUB X   & 0100  & 定点数减法\\
+  $^\circledast$JGZ X   & 0101    & 结果 > 0时跳转至\textbf{指令地址}X\\
+  $^\circledast$JMP X   & 0110    & 无条件跳转至\textbf{指令地址}X\\
+  HALT    & 0111    & 暂停程序\\
+  MPY X   & 1000    & 定点数乘法 \\
+  AND X   & 1001    & 按位与\\
+  OR X    & 1010    & 按位或\\
+  NOT X   & 1011    & 按位非 \\
+  $^\circledast$ SHIFTR X & 1100    & 算术右移 X 位\\
+  $^\circledast$ SHIFTL X & 1101    & 算术左移 X 位\\
 \end{longtable}
 
 \subsection{CPU内部寄存器}
@@ -447,13 +447,13 @@ CPU中总线、寄存器、内存和ALU等关键器件需要以合理的时序�
   SHIFTR & 1100 &
   
   无操作 &
-  BR ← ACC $\ggg $ 1 &
+  BR ← ACC $\ggg $ X &
   ACC ← BR \\
 
   SHIFTL & 1101 &
   
   无操作 &
-  BR ← ACC $\lll$ 1 &
+  BR ← ACC $\lll$ X &
   ACC ← BR \\
 
 \end{longtable}
@@ -594,7 +594,7 @@ LOOP: LOAD 0             ; 读取当前累加值 → ACC=SUM
 % 拟采用Python语言对用户代码进行处理，处理好的比特流可通过UART串口通信传入FPGA的BRAM。
 
 
-\subsection{UART 接收与 指令RAM 写入设计}
+\subsection{UART 接收与 指令ROM 写入设计}
 
 本设计基于 NEXYS 4 DDR 开发板，通过其板载的 UART 接口完成主机与 FPGA 之间的数据传输。该方案无需额外的数据线或 I/O 资源，即可实现对 FPGA 内部 RAM 的程序写入与指令输入，提升了系统的硬件集成度与使用便捷性。
 
@@ -620,7 +620,7 @@ LOOP: LOAD 0             ; 读取当前累加值 → ACC=SUM
   \text{CLK\_FRAME} = 10 \times \text{CLK\_BAUD} = 10 \times 868 = 8680\ \text{cycles}
 \end{equation}
 
-接收端采用中点采样策略，即在每位传输中间时刻（约第 $434$ 个时钟周期）对数据位进行采样，以提升抗干扰能力。
+接收端采用中点采样策略，即在每位传输中间时刻（约第 $434$ 个时钟周期）对数据位进行采样，以提升抗干扰能力。认为超过300$\mu s$RX端仍无新数据填入时，指令传输完成。
 
 \subsubsection{数据缓冲与存储结构}
 
@@ -642,7 +642,7 @@ LOOP: LOAD 0             ; 读取当前累加值 → ACC=SUM
   \item 程序中如含有 \texttt{LOOP} 标签，将在 RAM 地址分配完毕后由软件在解析阶段回填其地址位置。
 \end{itemize}
 
-另外，传入FPGA的所有指令将存于单独的指令内存中，与CPU数据内存隔离开来。CPU内存仅存数据，这符合用户编写的直观感受。每条存入内存的数据位宽为16，即每个地址按顺序存放一条指令。地址从1开始依次递增，防止复位时地址位初始化为0导致出错。指令写入在CPU开机之前，写入成功后开发板亮蓝灯。若在CPU运行时没有指令，则开发板亮红灯。
+另外，传入FPGA的所有指令将存于单独的指令ROM中，与CPU数据内存隔离开来。CPU内存仅存数据，这符合用户编写的直观感受。每条存入内存的数据位宽为16，即每个地址按顺序存放一条指令。地址从1开始依次递增，防止复位时地址位初始化为0导致出错。指令写入在CPU开机之前，写入成功后开发板亮蓝灯。若在CPU运行时没有指令，则开发板亮红灯。
 
 本模块通过串口实现了简洁的二进制指令数据装载方式，降低了外设复杂性，为后续的控制单元译码与执行单元操作提供了明确的数据支持。
 
@@ -655,7 +655,7 @@ LOOP: LOAD 0             ; 读取当前累加值 → ACC=SUM
 
 采用Harvard结构，内存中\textcolor{red}{不存放待执行指令}。待执行指令存放于另一块内存中，防止数据通路和指令通路发生冲突。
 \subsection{总线与外部控制信号}\label{sec:ExternalControl}
-对于指令RAM和数据RAM，各自包含一条与CPU的地址总线和数据总线。前者的数据总线是单向通往CPU的，而后者则为双向总线。
+对于指令ROM和数据RAM，各自包含一条与CPU的地址总线和数据总线。前者的数据总线是单向通往CPU的，而后者则为双向总线。
 \subsubsection{地址总线}
 地址总线为\textbf{8}位单向总线，提供CPU（即MAR）到内存的地址传送通路。由于其为单向总线，仅需内存侧读使能信号与CPU侧MAR的控制信号控制即可，无需复用。
 \subsubsection{数据总线}
@@ -704,190 +704,6 @@ LOOP: LOAD 0             ; 读取当前累加值 → ACC=SUM
   5   & PipelineFlush & CU    & 流水线清空（如错误预测、异常发生）      & 无 \\
 
 \end{longtable}
-\section{流水线架构与优化策略}
-\subsection{流水线阶段}
-为了加速CPU的指令执行速度，采用\textbf{6级同步流水线}完成CPU执行指令的全流程。分别为：取指令（IF），指令译码（ID），取操作数（FO），间址（IND），指令执行（EX）和写回寄存器（WB）六个阶段。流水线的六个阶段如下所示。
-$$
-  \text{IF} \rightarrow \text{ID} \rightarrow \text{FO}\rightarrow \text{IND} \rightarrow \text{EX} \rightarrow \text{WB}
-$$
-
-流水线各阶段的主要工作如下：
-\begin{itemize}
-  \item \textbf{IF(Instruction Fetch):}从指令存储器中取出指令，同时确定下一条指令地址（指针指向下一条指令）；
-  \item \textbf{ID(Instruction Decode):}翻译指令，同时让计算机得出要使用的寄存器，得出寻址方式，亦或者（转移指令）是给出转移目的寄存器与转移条件；
-  \item \textbf{FO(Fetch Operands):}取立即操作数到MBR，即指令的低8位。
-  \item \textbf{IND(Indirect):}间接寻址周期，每插入一个IND周期则间接寻址深度+1。不插入IND周期则为立即数寻址。在本设计中由于不考虑间接寻址，因此最多只有1个IND周期。\textbf{立即数寻址的指令将跳过这一阶段。}
-  \item \textbf{EX(Execution):}按照微操作指令指示打开数据通路。
-  \item \textbf{WB(Write Back):}将运算结果保存到目标寄存器。
-\end{itemize}
-
-因此，对于每一条指令，都会经历上述六个指令周期中的一部分，而由表~\ref{tab:five_stage_pipeline_ctrl}~可知，其中IF和ID部分所有指令公用相同的微操作指令。
-\subsection{流水线寄存器}
-为了使多条指令各阶段的数据在转换时可以保存，避免出现输出数据被覆盖的情况，需要设立5个流水线寄存器贮存上一阶段的输出。为方便起见，这些寄存器命名统一为“阶段1\_阶段2\_SHIFT\_REG”的方式。
-
-每一个寄存器所贮存的内容应当至少支撑起下一阶段的输入，基于此原则，可以给出每个转移寄存器所需贮存的内容如表~\ref{tab:pipeline:shiftreg}。
-\begin{longtable}{c c c}
-  \caption{流水线寄存器功能一览} \label{tab:pipeline:shiftreg} \\
-  \toprule
-  转移寄存器 & 贮存内容（高位到低位）  & 位宽   \\
-  \midrule
-  \endfirsthead
-
-  \caption[]{（续表）流水线寄存器功能一览} \\
-  \toprule
-  转移寄存器 & 贮存内容（高位到低位）  & 位宽  \\
-  \midrule
-  \endhead
-
-  \midrule
-  \multicolumn{3}{r}{续下页} \\
-  \midrule
-  \endfoot
-
-  \bottomrule
-  \endlastfoot
-
-  IF\_ID\_SHIFT\_REG  & PC/IR   & 24  \\
-  ID\_FO\_SHIFT\_REG  & PC    & MBR  \\
-  FO\_IND\_SHIFT\_REG  & PC    & MAR  \\
-  IND\_EX\_SHIFT\_REG  & MBR   & 16  \\
-  EX\_WB\_SHIFT\_REG  & MBR   & IR  \\
-  WB\_OUT\_SHIFT\_REG & 指令的输出结果：ACC/MR/Flags & 36
-
-\end{longtable}
-
-\subsection{流水线冒险}
-包含三种冒险情况：结构冒险、数据冒险、控制冒险（分支冒险）。\cite{zhihu453232311}
-
-结构冒险，即\textbf{两条指令共同访问了一个外围设备，不支持同时读取/写入的情况。}在本设计中，由于采用哈佛结构，指令ROM和数据RAM分开，并使用不同的数据总线和地址总线，因此不会出现结构冒险。
-
-数据冒险，即\textbf{某指令引用了前一次的运算结果，但其结果值还未产生}。常见的数据冒险包括读后写 (Read After Write)，写后读(WAR, Write After Read) 和 写后写(WAW, Write After Write)冲突。在顺序流水线设计中，后两种数据冒险不常见。
-
-控制冒险，即 \textbf{由于程序中存在分支、跳转等控制流改变的指令，导致流水线提前取到的指令可能是错误的}。当遇到分支指令时，流水线可能已经开始执行接下来的几条指令，而此时是否跳转还不确定，如果最终确实发生了跳转，这些指令将被作废，必须清空流水线并从正确的地址重新取指。为了解决控制冒险，本设计中采用了分支预测技术，提前猜测分支是否发生，并按照预测结果继续执行流水线，若预测正确则无需清空流水线，提高了效率；若预测失败，则需要清空错误的指令并重新取指。
-\subsection{流水线优化：前递与旁路}
-为了解决数据冒险，一般而言采用\textbf{插入空指令（NOP）}的方式。在本设计中，NOP的控制信号为全0，存放于CU的ROM第255个地址处（全1地址）。然而插入空指令降低了流水线的效率，为了提升效率，需要找到更好的解决方式。
-\subsection{流水线优化：分支预测}
-在本设计中，为了减少分支指令（JMP，JGZ）带来的流水线Flush和延迟，采用1比特分支预测进行流水线优化。
-
-分支预测发生在分支指令执行至\textbf{ID}阶段时。CU在译码后发现其为跳转类指令，就会向Branch Predictor发送一个信号，要求进行分支预测。分支预测的结果决定接下来流水线中IF阶段读取指令的地址，但若在EX阶段发现预测结果和实际结果不一致，则对已抓取的所有指令清空（Flush）。分支预测的具体步骤如算法~\ref{alg:1bitBP}。
-
-\begin{algorithm}[htbp]
-  \caption{1-bit 分支预测}
-  \label{alg:1bitBP}
-  \begin{algorithmic}[1]
-  \State \textbf{Note:} 使用 1-bit 预测器预测分支是否跳转
-  \State \textbf{Input:} $PC, BranchTaken$
-  \State \textbf{Output:} $NextPC$
-  \State \textbf{Internal Registers:} $PredictorBit, BranchTarget$
-
-  \Procedure{Branch Prediction}{}
-      \If {$PredictorBit == 1$}
-          \State $PredictedTaken \gets \text{True}$
-          \State $NextPC \gets BranchTarget$
-      \Else
-          \State $PredictedTaken \gets \text{False}$
-          \State $NextPC \gets PC + 1$
-      \EndIf
-  \EndProcedure
-
-  \Procedure{Branch Resolution}{}
-      \If {$BranchTaken \neq PredictedTaken$}  \Comment{预测错误}
-          \State $Flush \gets 1$  \Comment{清空错误指令}
-          \State $NextPC \gets \textbf{if } BranchTaken \textbf{ then } BranchTarget \textbf{ else } PC + 1$
-      \EndIf
-      \State \textbf{Update Predictor:}
-      \State $PredictorBit \gets BranchTaken$  \Comment{更新 1-bit 预测器}
-  \EndProcedure
-  \end{algorithmic}
-\end{algorithm}
-
-\begin{figure}[htbp]
-  \centering
-  \caption{流水线优化策略举例} \label{fig:pipeline:example}
-  \begin{tikzpicture}[x=0.8cm, y=0.8cm]
-
-
-
-    % % 指令标签
-    \node[anchor=east] at (0.5,-1.5) {\textbf{LOAD}~1};
-    \node[anchor=east] at (0.5,-2.5) {\textbf{ADD}~2};
-    \node[anchor=east] at (0.5,-3.5) {\textit{STALL}};
-    \node[anchor=east] at (0.5,-4.5) {\textbf{STORE}~1};
-    \node[anchor=east] at (0.5,-5.5) {\textbf{SUB}~3};
-    \node[anchor=east] at (0.5,-6.5) {\textbf{JGZ}~LOOP};
-    \node[anchor=east] at (0.5,-7.5) {\textit{INSTR\_AFTER}};
-    \node[anchor=east] at (0.5,-8.5) {\textit{(FLUSH)}};
-    
-      
-      % 指令的执行阶段（用方块）
-      \newcommand{\drawstage}[3]{ % #1: x位置，#2: y位置，#3: 字母
-        \draw[fill=blue!20] (#1,-#2) rectangle ++(1,-1);
-        \node at (#1+0.5,-#2-0.5) {\textbf{#3}};
-      }
-      
-      % 手动绘制流水线阶段
-      %              x, y, 阶段
-      \drawstage{1}{1}{I}
-      \drawstage{2}{1}{D}
-      \drawstage{3}{1}{F}
-      \drawstage{4}{1}{N}
-      \drawstage{5}{1}{E}
-      \drawstage{6}{1}{W}
-      
-      \drawstage{2}{2}{I}
-      \drawstage{3}{2}{D}
-      \drawstage{4}{2}{F}
-      \drawstage{5}{2}{N}
-      \drawstage{6}{2}{E}
-      \drawstage{7}{2}{W}
-      
-      % Stall 插入
-      \draw[fill=gray!30] (3,-3) rectangle ++(1,-1);
-      \node at (3.5,-3.5) {\textbf{Stall}};
-      
-      \drawstage{4}{4}{I}
-      \drawstage{5}{4}{D}
-      \drawstage{6}{4}{F}
-      \drawstage{7}{4}{N}
-      \drawstage{8}{4}{E}
-      \drawstage{9}{4}{W}
-      
-      \drawstage{5}{5}{I}
-      \drawstage{6}{5}{D}
-      \drawstage{7}{5}{F}
-      \drawstage{8}{5}{N}
-      \drawstage{9}{5}{E}
-      \drawstage{10}{5}{W}
-      
-      \drawstage{6}{6}{I}
-      \drawstage{7}{6}{D}
-      \drawstage{8}{6}{F}
-      \drawstage{9}{6}{N}
-      \drawstage{10}{6}{E}
-      \drawstage{11}{6}{W}
-      
-      % Flush显示
-      \foreach \i in {7,8,9,10,11,12} {
-        \draw[fill=red!20] (\i,-7) rectangle ++(1,-1);
-        \node at (\i+0.5,-7.5) {X};
-      }
-      
-      % 注释箭头和文字
-      \draw[->, thick, blue] (5.5,-1.5) -- (5.5,-2.2);
-      \node[anchor=west, font=\small, color = blue] at (8.6,-1) {前递：ADD使用LOAD结果};
-      
-      \draw[->, thick, gray] (3.5,-2.5) -- (3.5,-3.2);
-      \node[anchor=west, font=\small, color = gray] at (8.6,-1.75) {Stall：等待LOAD结果};
-      
-      \draw[->, thick, orange] (9.5,-5.5) -- (9.5,-6.2);
-      \node[anchor=west, font=\small,color = orange] at (8.6,-2.5) { 分支预测：假设跳转};
-      
-      \draw[->, thick, red] (10.5,-6.5) -- (10.5,-7.2);
-      \node[anchor=west, font=\small,color = red] at (8.6,-3.25) { Flush：跳转错误清空};
-      
-      \end{tikzpicture}
-\end{figure}
-
 
 \section{核心模块设计}
 \subsection{时钟、复位与停止信号}
@@ -896,8 +712,42 @@ CPU由\textbf{全局同步时钟}控制，时钟主频为50MHz。除复位信号
 CPU设有\textbf{全局异步复位}信号，低电平有效。当异步复位时，内存中除指令集数据以外所有数据清空，所有寄存器清空，控制信号全部归为断开（0）。
 
 当CPU执行07号指令HALT时，CPU处于\textbf{暂停}状态。与复位不同的是，此时所有寄存器不清空，但所有通路断开。在模块中使用\texttt{enable}信号标识（低电平有效）。恢复程序运行的方法是全局复位或继续运行信号（绑定FPGA的按键）。当该按键被按下时，\texttt{enable}信号恢复为1。
-\subsection{UART传输与指令写入}
+
+\subsection{UART传输与指令ROM}
 指令写入通过Python脚本（附录~\ref{sec:appendices:python}~）完成，其可以根据用户输出一串UART格式的比特流。用户可通过PC上的串口调试设备连接UART端口进行传输。
+
+\paragraph{功能块基本信息：}
+\begin{itemize}
+  \item 模块名：\texttt{INSTR\_ROM}
+  \item 最新更新日期：\texttt{4.14}
+  \item 是否经过测试：是
+\end{itemize}
+
+\paragraph{功能块外部接口：}
+\begin{longtable}{>{\bfseries}c c c c}
+  \caption{指令ROM模块外部接口} \\ 
+  \toprule
+  信号名 & 方向 & 位宽 & 描述 \\
+  \midrule
+  \endfirsthead
+
+  \multicolumn{4}{l}{\textbf{（续表）指令ROM模块外部接口}} \\
+  \toprule
+  信号名 & 方向 & 位宽 & 描述 \\
+  \midrule
+  \endhead
+  
+  \texttt{i\_clk\_uart} & 输入 & 1 & 时钟信号（100MHz） \\
+  \texttt{i\_clk} & 输入 & 1 & 系统时钟信号（50MHz） \\
+  \texttt{i\_rst\_n} & 输入 & 1 & 全局复位信号 \\
+  \texttt{i\_rx} & 输入 & 1 & 绑定至UART接收引脚 \\
+  \texttt{i\_addr\_read} & 输入 & 8 & 读ROM地址 \\
+  \texttt{o\_instr\_read} & 输出 & 16 & 指令输出信号 \\
+  \texttt{o\_instr\_transmit\_done} & 输出 & 1 & （安全的）指令完成传入标志 \\
+  \texttt{o\_max\_addr} & 输出 & 8 & 最大地址输出 \\
+  \bottomrule
+\end{longtable}
+
 
 \subsubsection{UART模块}
 \paragraph{模块基本信息：}
@@ -966,9 +816,9 @@ CPU设有\textbf{全局异步复位}信号，低电平有效。当异步复位�
   \texttt{o\_fifo\_empty}    & 输出   & 1       & 表示FIFO空（作为输入完成的判据）\\
   \bottomrule
 \end{longtable}
-\paragraph{设计思路：}
+\paragraph{备注：}
 
-参照文献\cite{fifo}。
+设计思路参照文献\cite{fifo}。
 
 \subsubsection{指令BRAM模块}
 \paragraph{模块基本信息：}
@@ -1002,7 +852,12 @@ CPU设有\textbf{全局异步复位}信号，低电平有效。当异步复位�
   \bottomrule
 \end{longtable}
 
-
+\subsubsection{仿真测试}
+\begin{figure}[htbp]
+  \centering
+  \includegraphics[width = 0.95\textwidth]{figure/instr_rom_sim.png}
+  \caption{指令ROM部分仿真}
+\end{figure}
 \subsection{基础模块设计}
 \subsubsection{ALU}
 ALU运算结果存放于MR寄存器和ACC寄存器中。其中MR寄存器存放乘法运算的高位结果，ACC寄存器存放乘法运算的低位结果。
@@ -1065,7 +920,7 @@ LOOP: LOAD 1
       HALT
 \end{lstlisting}
 \nocite{FPGA-CPU}
-
+\newpage
 \printbibliography
 \newpage
 \addappheadtotoc
@@ -1130,7 +985,7 @@ def parse_assembly(lines):
         instr = tokens[0]
         immediate = False
 
-        if instr in ["HALT","SHIFTR","SHIFTL"] : # No operand, fill with 0
+        if instr in ["HALT"] : # No operand, fill with 0
             opcode = MEMONICS[instr]
             operand = 0x00
         else:
@@ -1210,3 +1065,378 @@ if __name__ == "__main__":
 \end{appendices}
 
 \end{document}
+
+%! I felt extremely sorry to remove the whole section of Pipeline Design.
+
+% \section{流水线架构与优化策略}
+% 参考资料与文献：\cite{hu2024computer}
+% \subsection{流水线阶段}
+% 为了加速CPU的指令执行速度，采用\textbf{6级同步流水线}完成CPU执行指令的全流程。分别为：取指令（IF），指令译码（ID），取操作数（FO），间址（IND），指令执行（EX）和写回寄存器（WB）六个阶段。流水线的六个阶段如下所示。
+% $$
+%   \text{IF} \rightarrow \text{ID} \rightarrow \text{FO}\rightarrow \text{IND} \rightarrow \text{EX} \rightarrow \text{WB}
+% $$
+
+% 流水线各阶段的主要工作如下：
+% \begin{itemize}
+%   \item \textbf{IF(Instruction Fetch):}从指令存储器中取出指令，同时确定下一条指令地址（指针指向下一条指令）；
+%   \item \textbf{ID(Instruction Decode):}翻译指令，同时让计算机得出要使用的寄存器，得出寻址方式，亦或者（转移指令）是给出转移目的寄存器与转移条件；
+%   \item \textbf{FO(Fetch Operands):}取立即操作数到MBR，即指令的低8位。
+%   \item \textbf{IND(Indirect):}间接寻址周期，每插入一个IND周期则间接寻址深度+1。不插入IND周期则为立即数寻址。在本设计中由于不考虑间接寻址，因此最多只有1个IND周期。\textbf{立即数寻址的指令将跳过这一阶段。}
+%   \item \textbf{EX(Execution):}按照微操作指令指示打开数据通路。
+%   \item \textbf{WB(Write Back):}将运算结果保存到目标寄存器。
+% \end{itemize}
+
+% 因此，对于每一条指令，都会经历上述六个指令周期中的一部分，而由表~\ref{tab:five_stage_pipeline_ctrl}~可知，其中IF和ID部分所有指令公用相同的微操作指令。
+% \subsection{流水线寄存器}
+% 为了使多条指令各阶段的数据在转换时可以保存，避免出现输出数据被覆盖的情况，需要设立5个流水线寄存器贮存上一阶段的输出。为方便起见，这些寄存器命名统一为“阶段1\_阶段2\_SHIFT\_REG”的方式。
+
+% 每一个寄存器所贮存的内容应当至少支撑起下一阶段的输入，基于此原则，可以给出每个转移寄存器所需贮存的内容如表~\ref{tab:pipeline:shiftreg}。
+% \begin{longtable}{c c c}
+%   \caption{流水线寄存器功能一览} \label{tab:pipeline:shiftreg} \\
+%   \toprule
+%   转移寄存器 & 贮存内容（高位到低位）  & 位宽   \\
+%   \midrule
+%   \endfirsthead
+
+%   \caption[]{（续表）流水线寄存器功能一览} \\
+%   \toprule
+%   转移寄存器 & 贮存内容  & 位宽  \\
+%   \midrule
+%   \endhead
+
+%   \midrule
+%   \multicolumn{3}{r}{续下页} \\
+%   \midrule
+%   \endfoot
+
+%   \bottomrule
+%   \endlastfoot
+
+%   IF\_ID\_SHIFT\_REG  & PC/MBR   & 8/16  \\
+%   ID\_FO\_SHIFT\_REG  & IR    & 16  \\
+%   FO\_IND\_SHIFT\_REG  & IR[15:8], MBR[7:0]    & 16  \\
+%   IND\_EX\_SHIFT\_REG  & MBR/ACC   & 16/16  \\
+%   EX\_WB\_SHIFT\_REG  & BR/MBR/MAR\footnote{根据指令选择存放什么寄存器中的内容，若位宽过剩，默认高位补零。}   & 32  \\
+%   % WB\_OUT\_SHIFT\_REG & 指令的输出结果：ACC/MR/Flags & 36
+
+% \end{longtable}
+
+% \subsection{流水线冒险}
+% 包含三种冒险情况：结构冒险、数据冒险、控制冒险（分支冒险）。\cite{zhihu453232311}
+
+% 结构冒险，即\textbf{两条指令共同访问了一个外围设备，不支持同时读取/写入的情况。}在本设计中，由于采用哈佛结构，指令ROM和数据RAM分开，并使用不同的数据总线和地址总线，因此不会出现结构冒险。并且，尽管不同运算指令可能会使用相同的寄存器，如MBR，但由于指令不可能同时处于相同的阶段，他们一定会被保存在不同的流水线寄存器中。
+
+% 数据冒险，即\textbf{某指令引用了前一次的运算结果，但其结果值还未产生}。常见的数据冒险包括读后写 (Read After Write)，写后读(WAR, Write After Read) 和 写后写(WAW, Write After Write)冲突。在顺序流水线设计中，后两种数据冒险不常见，在本设计中不考虑。
+
+% 控制冒险，即 \textbf{由于程序中存在分支、跳转等控制流改变的指令，导致流水线提前取到的指令可能是错误的}。当遇到分支指令时，流水线可能已经开始执行接下来的几条指令，而此时是否跳转还不确定，如果最终确实发生了跳转，这些指令将被作废，必须清空流水线并从正确的地址重新取指。为了解决控制冒险，本设计中采用了分支预测技术，提前猜测分支是否发生，并按照预测结果继续执行流水线，若预测正确则无需清空流水线，提高了效率；若预测失败，则需要清空错误的指令并重新取指。
+
+% \subsection{数据冒险的解决：前递与旁路}
+% 为了解决数据冒险，一般而言采用\textbf{插入空指令（NOP）}的方式。在本设计中，NOP的控制信号为全0，存放于CU的ROM第255个地址处（全1地址）。然而插入空指令降低了流水线的效率，为了提升效率，需要找到更好的解决方式。
+
+% 为了解决RAW数据冒险，
+% \subsection{控制冒险的解决：分支预测}
+% 在本设计中，为了减少分支指令（JMP，JGZ）带来的流水线Flush和延迟，采用1比特分支预测进行流水线优化。
+
+% 分支预测发生在分支指令执行至\textbf{ID}阶段时。CU在译码后发现其为跳转类指令，就会向Branch Predictor发送一个信号，要求进行分支预测。分支预测的结果决定接下来流水线中IF阶段读取指令的地址，但若在EX阶段发现预测结果和实际结果不一致，则对已抓取的所有指令清空（Flush）。分支预测的具体步骤如算法~\ref{alg:1bitBP}。
+
+% \begin{algorithm}[htbp]
+%   \caption{1-bit 分支预测}
+%   \label{alg:1bitBP}
+%   \begin{algorithmic}[1]
+%   \State \textbf{Note:} 使用 1-bit 预测器预测分支是否跳转
+%   \State \textbf{Input:} $PC, BranchTaken$
+%   \State \textbf{Output:} $NextPC$
+%   \State \textbf{Internal Registers:} $PredictorBit, BranchTarget$
+
+%   \Procedure{Branch Prediction}{}
+%       \If {$PredictorBit == 1$}
+%           \State $PredictedTaken \gets \text{True}$
+%           \State $NextPC \gets BranchTarget$
+%       \Else
+%           \State $PredictedTaken \gets \text{False}$
+%           \State $NextPC \gets PC + 1$
+%       \EndIf
+%   \EndProcedure
+
+%   \Procedure{Branch Resolution}{}
+%       \If {$BranchTaken \neq PredictedTaken$}  \Comment{预测错误}
+%           \State $Flush \gets 1$  \Comment{清空错误指令}
+%           \State $NextPC \gets \textbf{if } BranchTaken \textbf{ then } BranchTarget \textbf{ else } PC + 1$
+%       \EndIf
+%       \State \textbf{Update Predictor:}
+%       \State $PredictorBit \gets BranchTaken$  \Comment{更新 1-bit 预测器}
+%   \EndProcedure
+%   \end{algorithmic}
+% \end{algorithm}
+
+% \begin{figure}[htbp]
+%   \centering
+%   \caption{流水线优化:前递} \label{fig:pipeline:1}
+%   \begin{tikzpicture}[x=0.8cm, y=0.8cm]
+
+
+
+%     % % 指令标签
+%     \node[anchor=east] at (0.5,-1.5) {\textbf{LOAD}~1};
+%     \node[anchor=east] at (0.5,-2.5) {\textbf{ADD}~2};
+%     \node[anchor=east] at (0.5,-3.5) {\textbf{ADD}~3};
+%     \node[anchor=east] at (0.5,-4.5) {\textbf{STORE}~1};
+%     \node[anchor=east] at (0.5,-5.5) {\textbf{SUB}~3};
+%     \node[anchor=east] at (0.5,-6.5) {\textit{INSTR\_AFTER}};
+    
+      
+%       % 指令的执行阶段（用方块）
+%       \newcommand{\drawstage}[3]{ % #1: x位置，#2: y位置，#3: 字母
+%         \draw[fill=blue!20] (#1,-#2) rectangle ++(1,-1);
+%         \node at (#1+0.5,-#2-0.5) {\textbf{#3}};
+%       }
+%       \newcommand{\drawstageorange}[3]{ % #1: x位置，#2: y位置，#3: 字母
+%         \draw[fill=orange!20] (#1,-#2) rectangle ++(1,-1);
+%         \node at (#1+0.5,-#2-0.5) {\textbf{#3}};
+%       }
+%       % 手动绘制流水线阶段
+%       %              x, y, 阶段
+%       \drawstage{1}{1}{I}
+%       \drawstage{2}{1}{D}
+%       \drawstage{3}{1}{F}
+%       \drawstage{4}{1}{N}
+%       \drawstage{5}{1}{E}
+%       \drawstage{6}{1}{W}
+      
+%       \drawstage{2}{2}{I}
+%       \drawstage{3}{2}{D}
+%       \drawstage{4}{2}{F}
+%       \drawstage{5}{2}{N}
+%       \drawstage{6}{2}{E}
+%       \drawstage{7}{2}{W}
+      
+%       % % Stall 插入
+%       % \draw[fill=gray!30] (3,-3) rectangle ++(1,-1);
+%       % \node at (3.5,-3.5) {\textbf{Stall}};
+%       \drawstage{3}{3}{I}
+%       \drawstage{4}{3}{D}
+%       \drawstage{5}{3}{F}
+%       \drawstage{6}{3}{N}
+%       \drawstage{7}{3}{E}
+%       \drawstage{8}{3}{W}
+
+%       \drawstage{4}{4}{I}
+%       \drawstage{5}{4}{D}
+%       \drawstage{6}{4}{F}
+%       \drawstage{7}{4}{N}
+%       \drawstage{8}{4}{E}
+%       \drawstage{9}{4}{W}
+      
+%       \drawstage{5}{5}{I}
+%       \drawstage{6}{5}{D}
+%       \drawstage{7}{5}{F}
+%       \drawstage{8}{5}{N}
+%       \drawstage{9}{5}{E}
+%       \drawstage{10}{5}{W}
+      
+%       % 注释箭头和文字
+%       \draw[->, thick, blue] (5.5,-1.5) -- (5.5,-2.2);
+%       \draw[->, thick, blue] (6.5,-2.5) -- (6.5,-3.2);
+%       \node[anchor=west, font=\small, color = blue] at (8.6,-2) {\makecell{前递：ADD指令的ACC使用\\上一条指令运算结果，EX阶段不再读取}};
+      
+%       % \draw[->, thick, gray] (3.5,-2.5) -- (3.5,-3.2);
+%       % \node[anchor=west, font=\small, color = gray] at (8.6,-1.75) {Stall：等待LOAD结果};
+      
+
+      
+%       \end{tikzpicture}
+% \end{figure}
+
+% \begin{figure}[htbp]
+%   \centering
+%   \caption{流水线优化：分支预测} \label{fig:pipeline:example}
+%   \begin{tikzpicture}[x=0.8cm, y=0.8cm]
+
+
+
+%     % % 指令标签
+%     \node[anchor=east] at (0.5,-1.5) {\textbf{LOAD}~1};
+%     \node[anchor=east] at (0.5,-2.5) {\textbf{ADD}~2};
+%     % \node[anchor=east] at (0.5,-3.5) {\textit{STALL}};
+%     \node[anchor=east] at (0.5,-3.5) {\textbf{STORE}~1};
+%     \node[anchor=east] at (0.5,-4.5) {\textbf{SUB}~3};
+%     \node[anchor=east] at (0.5,-5.5) {\textbf{JGZ}~LOOP};
+%     \node[anchor=east] at (0.5,-6.5) {\textit{INSTR\_AFTER}};
+%     \node[anchor=east] at (0.5,-7.5) {\textit{(FLUSH)}};
+    
+      
+%       % 指令的执行阶段（用方块）
+%       \newcommand{\drawstage}[3]{ % #1: x位置，#2: y位置，#3: 字母
+%         \draw[fill=blue!20] (#1,-#2) rectangle ++(1,-1);
+%         \node at (#1+0.5,-#2-0.5) {\textbf{#3}};
+%       }
+%       \newcommand{\drawstageorange}[3]{ % #1: x位置，#2: y位置，#3: 字母
+%         \draw[fill=orange!20] (#1,-#2) rectangle ++(1,-1);
+%         \node at (#1+0.5,-#2-0.5) {\textbf{#3}};
+%       }
+%       % 手动绘制流水线阶段
+%       %              x, y, 阶段
+%       \drawstage{1}{1}{I}
+%       \drawstage{2}{1}{D}
+%       \drawstage{3}{1}{F}
+%       \drawstage{4}{1}{N}
+%       \drawstage{5}{1}{E}
+%       \drawstage{6}{1}{W}
+      
+%       \drawstage{2}{2}{I}
+%       \drawstage{3}{2}{D}
+%       \drawstage{4}{2}{F}
+%       \drawstage{5}{2}{N}
+%       \drawstage{6}{2}{E}
+%       \drawstage{7}{2}{W}
+      
+%       % Stall 插入
+%       % \draw[fill=gray!30] (3,-3) rectangle ++(1,-1);
+%       % \node at (3.5,-3.5) {\textbf{Stall}};
+%       \drawstage{3}{3}{I}
+%       \drawstage{4}{3}{D}
+%       \drawstage{5}{3}{F}
+%       \drawstage{6}{3}{N}
+%       \drawstage{7}{3}{E}
+%       \drawstage{8}{3}{W}
+
+%       \drawstage{4}{4}{I}
+%       \drawstage{5}{4}{D}
+%       \drawstage{6}{4}{F}
+%       \drawstage{7}{4}{N}
+%       \drawstage{8}{4}{E}
+%       \drawstage{9}{4}{W}
+      
+%       \drawstage{5}{5}{I}
+%       \drawstageorange{6}{5}{D}
+%       \drawstage{7}{5}{F}
+%       \drawstage{8}{5}{N}
+%       \drawstage{9}{5}{E}
+%       \drawstage{10}{5}{W}
+
+%       \drawstage{6}{6}{I}
+%       \drawstage{7}{6}{D}
+%       \drawstage{8}{6}{F}
+%       \drawstage{7}{7}{I}
+%       \drawstage{8}{7}{D}
+%       \drawstage{8}{8}{I}
+%       % \drawstage{6}{6}{I}
+%       % \drawstageorange{7}{6}{D}
+%       % \drawstage{8}{6}{F}
+%       % \drawstage{9}{6}{N}
+%       % \drawstage{10}{6}{E}
+%       % \drawstage{11}{6}{W}
+      
+%       % Flush显示
+%       \foreach \i in {9,10,11} {
+%         \draw[fill=red!20] (\i,-6) rectangle ++(1,-1);
+%         \node at (\i+0.5,-6.5) {X};
+%       }
+%       \foreach \i in {9,10,11,12} {
+%         \draw[fill=red!20] (\i,-7) rectangle ++(1,-1);
+%         \node at (\i+0.5,-7.5) {X};
+%       }
+%       \foreach \i in {9,10,11,12,13} {
+%         \draw[fill=red!20] (\i,-8) rectangle ++(1,-1);
+%         \node at (\i+0.5,-8.5) {X};
+%       }
+%       % 注释箭头和文字
+      
+%       % \draw[->, thick, orange] (9.5,-5.5) -- (9.5,-6.2);
+%       % \node[anchor=west, font=\small,color = orange] at (8.6,-2.5) { 分支预测：假设跳转};
+      
+%       \draw[->, thick, red] (9.5,-5.5) -- (9.5,-6.2);
+%       % \node[anchor=west, font=\small,color = red] at (8.6,-3.25) { Flush：跳转错误清空};
+      
+%       \end{tikzpicture}
+% \end{figure}
+% tikz 流水线图
+% \begin{figure}[htbp]
+%   \centering
+%   \caption{流水线优化策略举例} \label{fig:pipeline:example}
+%   \begin{tikzpicture}[x=0.8cm, y=0.8cm]
+
+
+
+%     % % 指令标签
+%     \node[anchor=east] at (0.5,-1.5) {\textbf{LOAD}~1};
+%     \node[anchor=east] at (0.5,-2.5) {\textbf{ADD}~2};
+%     \node[anchor=east] at (0.5,-3.5) {\textit{STALL}};
+%     \node[anchor=east] at (0.5,-4.5) {\textbf{STORE}~1};
+%     \node[anchor=east] at (0.5,-5.5) {\textbf{SUB}~3};
+%     \node[anchor=east] at (0.5,-6.5) {\textbf{JGZ}~LOOP};
+%     \node[anchor=east] at (0.5,-7.5) {\textit{INSTR\_AFTER}};
+%     \node[anchor=east] at (0.5,-8.5) {\textit{(FLUSH)}};
+    
+      
+%       % 指令的执行阶段（用方块）
+%       \newcommand{\drawstage}[3]{ % #1: x位置，#2: y位置，#3: 字母
+%         \draw[fill=blue!20] (#1,-#2) rectangle ++(1,-1);
+%         \node at (#1+0.5,-#2-0.5) {\textbf{#3}};
+%       }
+%       \newcommand{\drawstageorange}[3]{ % #1: x位置，#2: y位置，#3: 字母
+%         \draw[fill=orange!20] (#1,-#2) rectangle ++(1,-1);
+%         \node at (#1+0.5,-#2-0.5) {\textbf{#3}};
+%       }
+%       % 手动绘制流水线阶段
+%       %              x, y, 阶段
+%       \drawstage{1}{1}{I}
+%       \drawstage{2}{1}{D}
+%       \drawstage{3}{1}{F}
+%       \drawstage{4}{1}{N}
+%       \drawstage{5}{1}{E}
+%       \drawstage{6}{1}{W}
+      
+%       \drawstage{2}{2}{I}
+%       \drawstage{3}{2}{D}
+%       \drawstage{4}{2}{F}
+%       \drawstage{5}{2}{N}
+%       \drawstage{6}{2}{E}
+%       \drawstage{7}{2}{W}
+      
+%       % Stall 插入
+%       \draw[fill=gray!30] (3,-3) rectangle ++(1,-1);
+%       \node at (3.5,-3.5) {\textbf{Stall}};
+      
+%       \drawstage{4}{4}{I}
+%       \drawstage{5}{4}{D}
+%       \drawstage{6}{4}{F}
+%       \drawstage{7}{4}{N}
+%       \drawstage{8}{4}{E}
+%       \drawstage{9}{4}{W}
+      
+%       \drawstage{5}{5}{I}
+%       \drawstage{6}{5}{D}
+%       \drawstage{7}{5}{F}
+%       \drawstage{8}{5}{N}
+%       \drawstage{9}{5}{E}
+%       \drawstage{10}{5}{W}
+      
+%       \drawstage{6}{6}{I}
+%       \drawstageorange{7}{6}{D}
+%       \drawstage{8}{6}{F}
+%       \drawstage{9}{6}{N}
+%       \drawstage{10}{6}{E}
+%       \drawstage{11}{6}{W}
+      
+%       % Flush显示
+%       \foreach \i in {7,8,9,10,11,12} {
+%         \draw[fill=red!20] (\i,-7) rectangle ++(1,-1);
+%         \node at (\i+0.5,-7.5) {X};
+%       }
+      
+%       % 注释箭头和文字
+%       \draw[->, thick, blue] (5.5,-1.5) -- (5.5,-2.2);
+%       \node[anchor=west, font=\small, color = blue] at (8.6,-1) {前递：ADD使用LOAD结果};
+      
+%       \draw[->, thick, gray] (3.5,-2.5) -- (3.5,-3.2);
+%       \node[anchor=west, font=\small, color = gray] at (8.6,-1.75) {Stall：等待LOAD结果};
+      
+%       % \draw[->, thick, orange] (9.5,-5.5) -- (9.5,-6.2);
+%       \node[anchor=west, font=\small,color = orange] at (8.6,-2.5) { 分支预测：假设跳转};
+      
+%       \draw[->, thick, red] (10.5,-6.5) -- (10.5,-7.2);
+%       \node[anchor=west, font=\small,color = red] at (8.6,-3.25) { Flush：跳转错误清空};
+      
+%       \end{tikzpicture}
+% \end{figure}
