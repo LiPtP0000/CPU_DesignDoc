@@ -1,5 +1,6 @@
 import re
-
+import serial
+import os
 # memonics
 MEMONICS = {
     "STORE":  0x01,
@@ -96,26 +97,36 @@ def assemble_to_bytes(code: list[int]) -> bytearray:
         result.append(word & 0xFF)         # operand
     return result
 
+def send_to_serial(bitstream:str) -> None:
+    # must run on Linux system
+    # FPGA Config: Baud rate = 115200, 8N1 Transmission
+    write_port = '/dev/ttyUSB0'
+    ser = serial.Serial(
+    port= write_port,
+    baudrate= 115200,
+    timeout=1,
+    bytesize=8,
+    parity= "N",
+    stopbits=1
+    ) 
 
-if __name__ == "__main__":
-    # 示例程序：从1加到100
-    asm_code = """
-      LOAD IMMEDIATE 0
-      STORE 1
-      LOAD IMMEDIATE 1
-      STORE 2
-    LOOP: LOAD 1
-      ADD 2
-      STORE 1
-      LOAD 2
-      ADD IMMEDIATE 1
-      STORE 2
-      SUB IMMEDIATE 100
-      JGZ LOOP
-      HALT
-    """
+    # 向 FPGA 发送数据
+    for item in bitstream:
+        ser.write(item.encode())  # 将字符串转换为字节并发送
+        print(f"Write bit {item} to serial port {write_port}\n")
+    print("Write successfully")
+    # # 读取来自 FPGA 的数据
+    # response = ser.readline()  # 读取一行数据（假设 FPGA 发送数据是以换行符结尾）
+    # print(f"Received from FPGA: {response.decode().strip()}")
 
-    lines = asm_code.strip().split('\n')
+    # 关闭串口
+    ser.close()
+
+def main():
+    os.chdir("./designs/input_src")
+    with open('add_one_to_hundred.txt', 'r') as file:
+        lines = file.readlines()  
+
     machine_words = parse_assembly(lines)
     binary = assemble_to_bytes(machine_words)
 
@@ -126,7 +137,8 @@ if __name__ == "__main__":
 
     print("\n二进制比特流:")
     print(" ".join(f"{b:08b}" for b in binary))
-    print("\nUART传输流:")
-    print("".join(f"0{b:08b}1" for b in binary))
+    bitstream = [f"{b:08b}" for b in binary]
+    print("\n写入串口：")
+    send_to_serial(bitstream)
 
-    
+main()
