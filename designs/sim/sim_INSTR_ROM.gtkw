@@ -1,0 +1,70 @@
+[*]
+[*] GTKWave Analyzer v3.3.116 (w)1999-2023 BSI
+[*] Mon Apr 14 06:55:27 2025
+[*]
+[dumpfile] "/mnt/d/POC_report/CPU/designs/V0.1.0/wave.vcd"
+[dumpfile_mtime] "Mon Apr 14 06:40:38 2025"
+[dumpfile_size] 4562988
+[savefile] "/mnt/d/POC_report/CPU/designs/V0.1.0/sim_INSTR_ROM.gtkw"
+[timestart] 0
+[size] 1600 894
+[pos] -149 0
+*-27.453573 734050000 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1
+[markername] A30000
+[treeopen] tb_INIT_INSTR_BRAM.
+[treeopen] tb_INIT_INSTR_BRAM.uut.
+[treeopen] tb_INIT_INSTR_BRAM.uut.instr_load_uart.
+[sst_width] 276
+[signals_width] 349
+[sst_expanded] 1
+[sst_vpaned_height] 260
+@28
+tb_INIT_INSTR_BRAM.clk_cpu
+tb_INIT_INSTR_BRAM.clk_uart
+[color] 2
+tb_INIT_INSTR_BRAM.i_rx
+@22
+tb_INIT_INSTR_BRAM.i_addr_read[7:0]
+tb_INIT_INSTR_BRAM.o_instr_read[15:0]
+@28
+tb_INIT_INSTR_BRAM.o_instr_transmit_done
+@24
+[color] 7
+tb_INIT_INSTR_BRAM.o_max_addr[7:0]
+@28
+tb_INIT_INSTR_BRAM.rst_n
+@200
+-UART
+@22
+tb_INIT_INSTR_BRAM.uut.instr_load_uart.bit_counter[4:0]
+@28
+tb_INIT_INSTR_BRAM.uut.instr_load_uart.o_clear_sign
+@22
+tb_INIT_INSTR_BRAM.uut.instr_load_uart.o_data[7:0]
+@28
+tb_INIT_INSTR_BRAM.uut.instr_load_uart.o_valid
+@24
+[color] 3
+tb_INIT_INSTR_BRAM.uut.instr_load_uart.rx_no_data_counter[25:0]
+@200
+-FIFO
+@22
+tb_INIT_INSTR_BRAM.uut.instr_load_fifo.i_data_uart[7:0]
+@28
+tb_INIT_INSTR_BRAM.uut.instr_load_fifo.i_valid_uart
+@22
+tb_INIT_INSTR_BRAM.uut.instr_load_fifo.o_addr_bram[7:0]
+tb_INIT_INSTR_BRAM.uut.instr_load_fifo.o_data_bram[15:0]
+@28
+tb_INIT_INSTR_BRAM.uut.instr_load_fifo.o_fifo_empty
+tb_INIT_INSTR_BRAM.uut.instr_load_fifo.o_wr_en_bram
+@200
+-Memory
+@22
+tb_INIT_INSTR_BRAM.uut.instr_load_bram.i_addr_read[7:0]
+tb_INIT_INSTR_BRAM.uut.instr_load_bram.i_addr_write[7:0]
+tb_INIT_INSTR_BRAM.uut.instr_load_bram.i_instr_write[15:0]
+tb_INIT_INSTR_BRAM.uut.instr_load_bram.o_instr_read[15:0]
+tb_INIT_INSTR_BRAM.uut.instr_load_bram.o_max_addr[7:0]
+[pattern_trace] 1
+[pattern_trace] 0

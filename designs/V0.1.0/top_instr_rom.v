@@ -1,13 +1,14 @@
 `timescale 1ns / 1ps
 
-module INIT_INSTR_BRAM (
+module INSTR_ROM (
     i_clk_uart,
     i_clk,
     i_rst_n,
     i_rx,
     i_addr_read,
     o_instr_read,
-    o_instr_transmit_done
+    o_instr_transmit_done,
+    o_max_addr
 );
   input i_clk_uart;  // Board Freqency: 100MHz
   input i_clk;  // CPU Frequency: 50MHz
@@ -16,6 +17,7 @@ module INIT_INSTR_BRAM (
   input [7:0] i_addr_read;
   output [15:0] o_instr_read;
   output o_instr_transmit_done;
+  output [7:0] o_max_addr;
 
   wire valid_uart;
   wire [7:0] data_uart;
@@ -51,7 +53,8 @@ module INIT_INSTR_BRAM (
       .i_addr_write(addr_bram),
       .i_addr_read(i_addr_read),
       .o_instr_read(o_instr_read),
-      .i_instr_write(data_bram)
+      .i_instr_write(data_bram),
+      .o_max_addr(o_max_addr)
   );
 
   assign o_instr_transmit_done = clear_uart & clear_fifo;

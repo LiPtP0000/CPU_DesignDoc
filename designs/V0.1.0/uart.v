@@ -21,8 +21,8 @@ module UART (
 
   localparam CLK_DIV = CLK_FREQ / BAUD_RATE;
 
-  // 0.5s with 100MHz Freqency
-  parameter MAX_WAITING_CLK = 50000000;
+  // 0.3ms with 100MHz Freqency
+  parameter MAX_WAITING_CLK = 30000;
 
   // State Parameters
   parameter IDLE = 3'b000;
