@@ -296,12 +296,13 @@ ALU与外围寄存器的控制通路见第~\ref{sec:datapath}~节。为了让ALU
 
 \end{longtable}
 % 放一张表
-
 \subsection{CPU内部数据通路、控制信号与微操作指令（Micro-Operations）}
 CPU中总线、寄存器、内存和ALU等关键器件需要以合理的时序执行不同的指令，而这需要数据通路和控制通路共同实现。数据通路负责在各个器件中传递数据，而控制通路负责控制数据通路的开关。因此，在本节中，先定义CPU需要的数据通路，再进一步定义控制数据通路的控制信号，最后描述承载控制信号的微指令。
 
 \subsubsection{数据通路与控制信号}\label{sec:datapath}
-关键存储单元之间通过数据通路进行连接。每条数据通路都由一位控制信号控制。控制信号为1时表示通路打开，数据沿指定流向进行传输。该CPU共有\textbf{17}位控制信号。\footnote{CU内部的数据通路不需要受到微指令的控制，因此不需要在此列出。请参照模块设计部分。}
+关键存储单元之间通过数据通路进行连接。每条数据通路都由一位控制信号控制。控制信号为1时表示通路打开，数据沿指定流向进行传输。另外，CU还通过特定位控制信号直接控制存储单元，例如ALU的运算方式直接由CU给出。
+
+该CPU共有\textbf{16}位数据通路控制信号和4位ALU控制信号。\footnote{CU内部的数据通路不需要受到微指令的控制，因此不需要在此列出。请参照模块设计部分。}
 
 \begin{longtable}{c c c}
   \caption{数据通路与控制信号一览} \label{tab:CPU:DataPath} \\
@@ -342,12 +343,10 @@ CPU中总线、寄存器、内存和ALU等关键器件需要以合理的时序�
   13 & MBR   & 数据总线  \\
   14 & IR    & CU  \\
   15 & IR[7:0]    & MBR \\
-  16 & IR[11:8]    & ALU\_Ctrl \\
   \midrule
-  \multicolumn{3}{c}{\textbf{流水线控制}} \\
+  \multicolumn{3}{c}{\textbf{CU直接控制}}\\
   \midrule
-  17 & & \\
-
+  19:16(ALU\_op) & Opcode    & ALU\_op \\
 \end{longtable}
 
 \subsubsection{微操作指令（Micro-Operations）}
@@ -357,70 +356,67 @@ CPU中总线、寄存器、内存和ALU等关键器件需要以合理的时序�
 
 所有用逗号隔开的指令均\textbf{从左到右顺序执行}，不能并行执行。所有的微操作指令见表~\ref{tab:five_stage_pipeline}。
 
-\begin{longtable}{ccccccl}
+\begin{longtable}{cccc}
   \caption{CPU微操作指令表} \label{tab:five_stage_pipeline}\\
   \toprule
-  指令 & 机器码 &  FO & EX & WB \\
+  指令 & 机器码  & EX & WB \\
   \midrule
   \endfirsthead
 
   \toprule
   \caption[]{（续表）CPU微操作指令表} \\
   \toprule
-  指令 & 机器码 & FO & EX & WB \\
+  指令 & 机器码 & EX & WB \\
   \midrule
   \endhead
 
   \bottomrule
   \endlastfoot
   \rowcolor{red!10}
-  IF & \textbf{阶段} & \multicolumn{3}{c}{MAR ← PC; PC ← PC+1; MBR ← Mem[MAR]} \\
+  IF & \textbf{阶段} & \multicolumn{2}{c}{MAR ← PC; PC ← PC+1; MBR ← Mem[MAR]} \\
   \midrule
   \rowcolor{yellow!10}
-  ID & \textbf{阶段} & \multicolumn{3}{c}{IR ← MBR;  CU ← IR}\\
+  ID & \textbf{阶段} & \multicolumn{2}{c}{IR ← MBR;  CU ← IR}\\
+  \midrule
+  \rowcolor{blue!10}
+  FO & \textbf{阶段} & \multicolumn{2}{c}{MBR ← IR[7:0];} \\
   \midrule
   \rowcolor{green!10}
-  IND & \textbf{阶段} & \multicolumn{3}{c}{MAR ← MBR;  MBR ← Mem[MAR]}\\
+  
+  IND & \textbf{阶段} & \multicolumn{2}{c}{MAR ← MBR;  MBR ← Mem[MAR]}\\
   \midrule
-  STORE X & 0001 &MBR ← IR[7:0];  & MAR ← MBR; & Mem[MAR] ← ACC \\
+  STORE X & 0001  & MAR ← MBR; & Mem[MAR] ← ACC \\
 
   LOAD X & 0010 &
-  MBR ← IR[7:0];  & 
   无操作 & 
   ACC ← MBR \\
   \midrule
   ADD X & 0011 &
   
-  MBR ← IR[7:0];  &
   BR ← ACC + MBR & 
   ACC ← BR \\
 
   SUB X & 0100 &
   
-  MBR ← IR[7:0]; &
   BR ← ACC - MBR & 
   ACC ← BR \\
   MPY X & 1000 &
   
-  MBR ← IR[7:0]; &
   BR ← ACC × MBR &
   \makecell{ACC ← BR[15:0];\\ MR ← BR[31:16]} \\
   \midrule
   JGZ X & 0101 &
-  
-  \makecell{读取条件标志寄存器\\MBR ← IR[7:0];}  & 
+   
   判断：ZF=0 且 NF=0？ & 
   \makecell{若满足，PC ← MBR，\\否则 PC ← PC（不变）} \\
 
   JMP X & 0110 &
   
-  MBR ← IR[7:0]; &
   无操作 & 
   PC ← MBR \\
 
   HALT & 0111 &
   
-  无操作 &
   无操作 & 
   enable ← 0，停止流水线 \\
 
@@ -428,31 +424,26 @@ CPU中总线、寄存器、内存和ALU等关键器件需要以合理的时序�
   \midrule
   AND X & 1001 &
   
-  MBR ← IR[7:0]; &
   BR ← ACC AND MBR &
   ACC ← BR \\
 
   OR X & 1010 &
   
-  MBR ← IR[7:0];  &
   BR ← ACC OR MBR &
   ACC ← BR \\
 
   NOT X & 1011 &
-  
-  MBR ← IR[7:0];&
+
   BR ← NOT MBR &
   ACC ← BR \\
 
-  SHIFTR & 1100 &
+  SHIFTR X & 1100 &
   
-  无操作 &
   BR ← ACC $\ggg $ X &
   ACC ← BR \\
 
-  SHIFTL & 1101 &
+  SHIFTL X & 1101 &
   
-  无操作 &
   BR ← ACC $\lll$ X &
   ACC ← BR \\
 
@@ -868,13 +859,8 @@ ALU运算结果存放于MR寄存器和ACC寄存器中。其中MR寄存器存放�
 \subsubsection{ACC}
 \subsubsection{数据RAM}
 \subsubsection{Control Unit}
+
 参考表~\ref{tab:CPU:DataPath}~，确定指令集中的每一条指令对应的控制信号，并存储到CU的内部寄存器中，即可完成CU的主要功能设计。
-\subsection{流水线支持}
-
-
-
-
-
 
 
 
@@ -882,15 +868,7 @@ ALU运算结果存放于MR寄存器和ACC寄存器中。其中MR寄存器存放�
 
 \section{仿真验证}
 \subsection{时延分析}
-% 定义一个打印周期为从POC重置自身$SR_7$到一轮打印结束所经历的时钟上升沿个数。那么：
-% \begin{enumerate}
-%     \item 由POC重置到PROCESSOR置零$SR_7$，使用6个时钟，分别为读取POC信号的一个时钟和状态机的五个时钟；\footnote{中断模式较查询模式少用一个时钟。因为中断信号由组合逻辑生成，中断模式下PROCESSOR可立刻读取中断信号，无需读取POC信号。}
-%     \item POC此时开始与打印机进行交互。写入\texttt{o\_tr}和\texttt{o\_pd}共使用1个时钟，\texttt{o\_tr}信号持续1个时钟；
-%     \item 打印机收到信号后，耗时8个时钟打印数据；
-%     \item 打印结束后，POC重置$SR_7$，使用1个时钟。
-% \end{enumerate}
-% 故一个打印周期为17个时钟（查询模式）或16个时钟（中断模式）。
-\subsection{并行计算加速比（Speed-up Factor）分析}
+
 \subsection{激励设置}
 
 \section{FPGA实现}
@@ -927,7 +905,7 @@ LOOP: LOAD 1
 \begin{appendices}
   \section{完整设计代码}
   \subsection{汇编程序处理Python脚本}\label{sec:appendices:python}
-  \lstinputlisting[language=python,caption={convert.py}]{./designs/V0.1.0/convert.py}
+  \lstinputlisting[language=python,caption={write\_bistream.py}]{./designs/input_src/write_bitstream.py}
   
 \end{appendices}
 
