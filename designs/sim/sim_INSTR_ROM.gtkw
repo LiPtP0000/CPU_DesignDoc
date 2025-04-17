@@ -2,10 +2,10 @@
 [*] GTKWave Analyzer v3.3.116 (w)1999-2023 BSI
 [*] Mon Apr 14 06:55:27 2025
 [*]
-[dumpfile] "/mnt/d/POC_report/CPU/designs/V0.1.0/wave.vcd"
+[dumpfile] "/home/liptp/CPU_Design/CPU_DesignDoc/designs/V0.1.0/wave.vcd"
 [dumpfile_mtime] "Mon Apr 14 06:40:38 2025"
 [dumpfile_size] 4562988
-[savefile] "/mnt/d/POC_report/CPU/designs/V0.1.0/sim_INSTR_ROM.gtkw"
+[savefile] "/home/liptp/CPU_Design/CPU_DesignDoc/designs/sim/sim_INSTR_ROM.gtkw"
 [timestart] 0
 [size] 1600 894
 [pos] -149 0

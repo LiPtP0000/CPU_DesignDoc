@@ -62,7 +62,6 @@ module UART (
   // State Transitions
   always @(posedge i_clk_uart or negedge i_rst_n) begin
     if (!i_rst_n) begin
-      current_state <= IDLE;
       next_state <= IDLE;
     end else begin
       case (current_state)
@@ -96,7 +95,6 @@ module UART (
   always @(posedge i_clk_uart or negedge i_rst_n) begin
     if (!i_rst_n) begin
 
-      clk_div_counter <= 0;
       bit_counter <= 0;
       rx_shift_reg <= 8'd0;
       o_valid <= 0;

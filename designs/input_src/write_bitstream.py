@@ -100,7 +100,7 @@ def assemble_to_bytes(code: list[int]) -> bytearray:
 def send_to_serial(bitstream:str) -> None:
     # must run on Linux system
     # FPGA Config: Baud rate = 115200, 8N1 Transmission
-    write_port = '/dev/ttyUSB0'
+    write_port = '/dev/ttyUSB1'
     ser = serial.Serial(
     port= write_port,
     baudrate= 115200,
@@ -131,14 +131,14 @@ def main():
     binary = assemble_to_bytes(machine_words)
 
     # 打印每条机器码（16位）和最终二进制流
-    print("机器码:")
+    print("Machine Code:")
     for i, word in enumerate(machine_words):
         print(f"{i:02}: {word:04X}")
 
-    print("\n二进制比特流:")
+    print("\nGenerated Binary Bitstream:")
     print(" ".join(f"{b:08b}" for b in binary))
     bitstream = [f"{b:08b}" for b in binary]
-    print("\n写入串口：")
+    
     send_to_serial(bitstream)
 
 main()
