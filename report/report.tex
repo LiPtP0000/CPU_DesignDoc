@@ -448,71 +448,66 @@ CPU中总线、寄存器、内存和ALU等关键器件需要以合理的时序�
   ACC ← BR \\
 
 \end{longtable}
+\subsubsection{CU控制信号（Control Signals）}
 
-\begin{longtable}{ccccccl}
+\begin{longtable}{cccc}
   \caption{CPU控制信号表} \label{tab:five_stage_pipeline_ctrl}\\
   \toprule
-  指令 & 机器码 &  FO & EX & WB \\
+  指令 & 机器码  & EX & WB \\
   \midrule
   \endfirsthead
 
   \toprule
   \caption[]{（续表）CPU控制信号表} \\
   \toprule
-  指令 & 机器码 & FO & EX & WB \\
+  指令 & 机器码 & EX & WB \\
   \midrule
   \endhead
 
   \bottomrule
   \endlastfoot
   \rowcolor{red!10}
-  IF & \textbf{阶段} & \multicolumn{3}{c}{$C_2$;$C_0$,$C_5$} \\
+  IF & \textbf{阶段} & \multicolumn{2}{c}{$t_1:C_2$, $t_2:C_0$,$C_5$} \\
   \midrule
   \rowcolor{yellow!10}
-  ID & \textbf{阶段} & \multicolumn{3}{c}{$C_4$,  $C_{14}$}\\
+  ID & \textbf{阶段} & \multicolumn{2}{c}{$t_1:C_4$,  $t_2:C_{14}$}\\
+  \midrule
+  \rowcolor{blue!10}
+  FO & \textbf{阶段} & \multicolumn{2}{c}{$C_{15}$} \\
   \midrule
   \rowcolor{green!10}
-  IND & \textbf{阶段} & \multicolumn{3}{c}{$C_0$,$C_5$,$C_8$}\\
+  IND & \textbf{阶段} & \multicolumn{2}{c}{$t_1:C_8$, $t_2:C_0,C_5$}\\
   \midrule
-  STORE X & 0001 &$C_{15}$  & $C_8$ & $C_0$,$C_{12}$,$C_{13}$ \\
+  STORE X & 0001   & $C_8$ & $C_0$,$C_{12}$,$C_{13}$ \\
 
-  LOAD X & 0010 &
- $C_{15}$ & 
+  LOAD X & 0010  & 
   无操作 & 
   $C_{11}$ \\
   \midrule
   ADD X & 0011 &
   
- $C_{15}$ &
   $C_6$,$C_7$,$C_{16}$ & 
   $C_9$ \\
 
   SUB X & 0100 &
-  
- $C_{15}$&
   $C_6$,$C_7$,$C_{16}$ & 
   $C_9$ \\
   MPY X & 1000 &
-  
- $C_{15}$&
   $C_6$,$C_7$,$C_{16}$ &
   $C_9$,$C_{10}$ \\
   \midrule
   JGZ X & 0101 &
   
-  \makecell{读取条件标志寄存器\\$C_{15}$} & 
   判断：ZF=0 且 NF=0？ & 
   \makecell{若满足，$C_3$\\否则 PC ← PC+1} \\
 
   JMP X & 0110 &
   
-  $C_{15}$ &
   无操作 & 
   $C_3$ \\
 
   HALT & 0111 &
   
-  无操作 &
   无操作 & 
   enable ← 0，停止流水线 \\
 
@@ -520,32 +515,25 @@ CPU中总线、寄存器、内存和ALU等关键器件需要以合理的时序�
   \midrule
   AND X & 1001 &
   
- $C_{15}$&
   $C_6$,$C_7$,$C_{16}$ &
   $C_9$ \\
 
   OR X & 1010 &
   
- $C_{15}$ &
   $C_6$,$C_7$,$C_{16}$ &
   $C_9$ \\
 
   NOT X & 1011 &
   
- $C_{15}$&
   $C_6$,$C_{16}$ &
   $C_9$ \\
 
-  SHIFTR & 1100 &
-  
-  无操作 &
-  $C_7$,$C_{16}$ &
+  SHIFTR X& 1100 &
+  $C_6$,$C_7$,$C_{16}$ &
   $C_9$ \\
 
-  SHIFTL & 1101 &
-  
-  无操作 &
-  $C_7$,$C_{16}$ &
+  SHIFTL X& 1101 &
+  $C_6$,$C_7$,$C_{16}$ &
   $C_9$ \\
 
 \end{longtable}
@@ -849,6 +837,74 @@ CPU设有\textbf{全局异步复位}信号，低电平有效。当异步复位�
   \includegraphics[width = 0.95\textwidth]{figure/instr_rom_sim.png}
   \caption{指令ROM部分仿真}
 \end{figure}
+
+
+\subsection{控制单元}
+控制单元由CAR、CBR寄存器和CM（Control Memory）只读模块组成。控制单元通过微操作指令和控制信号控制整个系统。整个控制单元的结构如图~\ref{fig:controlunit}~所示。
+\begin{figure}[htbp]
+  \centering
+  \includegraphics[width = 0.75\textwidth]{figure/CU.pdf}
+  \caption{控制单元结构示意图}
+  \label{fig:controlunit}
+\end{figure}
+\subsubsection{Control Memory}
+\paragraph{模块基本信息：}
+\begin{itemize}
+  \item 模块名：\texttt{cu\_control\_memory}
+  \item 最新更新日期：\texttt{4.23}
+  \item 是否经过测试：否
+\end{itemize}
+\paragraph{模块功能：}
+全局复位时存储CPU的水平微操作指令。微操作指令表参考表~\ref{tab:five_stage_pipeline_ctrl}~。
+\paragraph{模块外部接口：}
+\begin{longtable}{>{\bfseries}c c c c}
+  \caption{Control Memory模块外部接口} \\
+  \toprule
+  信号名 & 方向 & 位宽 & 描述 \\
+  \midrule
+  \endfirsthead
+
+  \multicolumn{4}{l}{\textbf{（续表）Control Memory模块外部接口}} \\
+  \toprule
+  信号名 & 方向 & 位宽 & 描述 \\
+  \midrule
+  \endhead
+
+  \texttt{i\_clk}          & 输入  & 1        & 系统时钟信号，驱动读写操作 \\
+  \texttt{i\_rst\_n}      & 输入    & 1       & 全局复位，此时重新写入全部指令\\
+  \texttt{i\_addr\_read}   & 输入  & 8        & 要读取的指令地址 \\
+  \texttt{o\_signal\_read}  & 输出  & 16       & 从 BRAM 中读取的指令内容 \\
+  \bottomrule
+\end{longtable}
+\subsubsection{Sequencing Logic}
+\paragraph{模块基本信息：}
+\begin{itemize}
+  \item 模块名：\texttt{cu\_sequencing\_logic}
+  \item 最新更新日期：\texttt{4.23}
+  \item 是否经过测试：否
+\end{itemize}
+\paragraph{模块功能：}
+根据CBR反馈的“下一条地址”逻辑以及控制信号，综合判断出下一条指令。
+\paragraph{模块外部接口：}
+\begin{longtable}{>{\bfseries}c c c c}
+  \caption{Sequencing Logic模块外部接口} \\
+  \toprule
+  信号名 & 方向 & 位宽 & 描述 \\
+  \midrule
+  \endfirsthead
+
+  \multicolumn{4}{l}{\textbf{（续表）Control Memory模块外部接口}} \\
+  \toprule
+  信号名 & 方向 & 位宽 & 描述 \\
+  \midrule
+  \endhead
+
+  \texttt{i\_clk}          & 输入  & 1        & 系统时钟信号，驱动读写操作 \\
+  \texttt{i\_rst\_n}      & 输入    & 1       & 全局复位\\
+  \texttt{i\_ctrl\_CBR}   & 输入  & 8        & 来自CBR的下一跳地址 \\
+  \texttt{o\_signal\_read}  & 输出  & 16       & 从 BRAM 中读取的指令内容 \\
+  \bottomrule
+\end{longtable}
 \subsection{基础模块设计}
 \subsubsection{ALU}
 ALU运算结果存放于MR寄存器和ACC寄存器中。其中MR寄存器存放乘法运算的高位结果，ACC寄存器存放乘法运算的低位结果。
@@ -905,7 +961,7 @@ LOOP: LOAD 1
 \begin{appendices}
   \section{完整设计代码}
   \subsection{汇编程序处理Python脚本}\label{sec:appendices:python}
-  \lstinputlisting[language=python,caption={write\_bistream.py}]{./designs/input_src/write_bitstream.py}
+  \lstinputlisting[language=python,caption={write\_bistream.py}]{../designs/input_src/write_bitstream.py}
   
 \end{appendices}
 
