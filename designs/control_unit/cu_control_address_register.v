@@ -1,46 +1,91 @@
 `timescale 1ns / 1ps
 
+// Sequencing Logic & CAR
+/*  Sequencing Logic of CAR 
+*   10 self increment
+*   11 back to 0
+*   01 jump 
+*   00 nothing
+*/
 module CAR (
-    input  wire        clk,            // 时钟
-    input  wire [23:0] control_word,   // 微程序控制字
-    input  wire [7:0]  ir_data,        // 指令高8位（Opcode）
-    input  wire        flag_jump,      // 条件跳转标志（ACC>=0）
-    output reg  [7:0]  car_data = 8'h00 // 微指令地址寄存器
+    i_clk,
+    i_rst_n,
+    i_control_word_car,
+    i_ir_data,
+    i_ctrl_ZF,
+    i_ctrl_NF,
+    i_ctrl_MF,
+    o_car_data
 );
 
-// 只保留 CAR 控制码（跳转/自增/回0）
-wire [1:0] car_ctrl = control_word[21:20];  // 01=跳转; 10=自增; 11=回0
+  input wire i_clk;
+  input wire i_rst_n;
+  input wire [1:0] i_control_word_car;
+  input wire [4:0] i_ir_data;  // MSB + IR[3:0]
+  input wire i_ctrl_ZF;  // ZF Flag
+  input wire i_ctrl_NF;  // NF Flag
+  input wire i_ctrl_MF;  // MF Flag
+  output reg [6:0] o_car_data;
 
-always @(posedge clk) begin
-    case (car_ctrl)
-        2'b01: begin // 跳转阶段
+  // Indicator of indirect cycle requirement
+  wire indirect_flag = i_ir_data[4];
+
+  // Indicator of indirect cycle done, default 0.
+  reg indirect_done;
+
+
+  wire [3:0] ir_data = i_ir_data[3:0];
+
+  always @(posedge i_clk or negedge i_rst_n) begin
+    if (!i_rst_n) begin
+      o_car_data <= 7'h00;
+      indirect_done <= 1'b0;
+    end else begin
+      // indirect at previlige
+      if (indirect_flag && !indirect_done) begin
+        o_car_data <= 7'h02;
+        indirect_done <= 1'b1;
+      end else begin
+        case (i_control_word_car)
+          2'b01: begin  // Jump to execution
             case (ir_data)
-                8'h01: car_data <= 8'h07; // STORE
-                8'h02: car_data <= 8'h09; // LOAD
-                8'h03: car_data <= 8'h0B; // ADD
-                8'h04: car_data <= 8'h0D; // SUB
-                8'h06: car_data <= 8'h0F; // MPY
-
-                8'h07: begin // JGZ（带条件跳转）
-                    if (flag_jump) car_data <= 8'h11;
-                    else           car_data <= 8'h12;
+              4'd1: begin
+                if (i_ctrl_MF) begin
+                  o_car_data <= 7'h23;  // STORE & STOREH
+                end else begin
+                  o_car_data <= 7'h07;  // STORE Only
                 end
+              end
+              4'd2: o_car_data <= 7'h09;  // LOAD
+              4'd3: o_car_data <= 7'h0B;  // ADD
+              4'd4: o_car_data <= 7'h0D;  // SUB
 
-                8'h08: car_data <= 8'h13; // JMP
-                8'h0A: car_data <= 8'h15; // HALT
-                8'h0B: car_data <= 8'h17; // AND
-                8'h0C: car_data <= 8'h19; // OR
-                8'h0D: car_data <= 8'h1B; // NOT
-
-                8'h0E: car_data <= 8'h1D; // SHIFT（建议你拆开左右移）
-
-                default: car_data <= 8'h00; // 异常返回FETCH
+              4'd5: begin  // JGZ
+                if (!i_ctrl_ZF && !i_ctrl_NF) o_car_data <= 7'h11;
+                else o_car_data <= 7'h00;
+              end
+              4'd6: o_car_data <= 7'h11;     // JMP
+              4'd7: o_car_data <= 7'h13;     // HALT
+              4'd8: o_car_data <= 7'h0F;     // MPY
+              4'd9: o_car_data <= 7'h15;     // AND
+              4'd10: o_car_data <= 7'h17;    // OR
+              4'd11: o_car_data <= 7'h19;    // NOT
+              4'd12: o_car_data <= 7'h1B;    // SHIFTR
+              4'd13: o_car_data <= 7'h1D;    // SHIFTL
+              default: o_car_data <= 7'h00;
             endcase
-        end
-        2'b10: car_data <= car_data + 1; // 下一个微指令
-        2'b11: car_data <= 8'h00;        // 回FETCH第0步
-        default: car_data <= car_data;   // 保持不变
-    endcase
-end
+          end
+          2'b10: begin
+            o_car_data <= o_car_data + 1;  // Next Micro-instruction
+          end
+          2'b11: begin
+            o_car_data    <= 7'h00;  // Fetch next instruction
+            indirect_done <= 1'b0;  // Reset Indirect Flag
+          end
+          default: o_car_data <= o_car_data;  // Prevent latch
+        endcase
+      end
+    end
+  end
 
 endmodule

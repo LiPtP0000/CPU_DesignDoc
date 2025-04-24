@@ -1,0 +1,548 @@
+$date
+	Fri Apr 25 00:41:01 2025
+$end
+$version
+	Icarus Verilog
+$end
+$timescale
+	1ps
+$end
+$scope module tb_CU_TOP $end
+$var wire 1 ! o_ctrl_mar_increment $end
+$var wire 4 " o_alu_op [3:0] $end
+$var wire 1 # o_IF_stage $end
+$var wire 1 $ C9 $end
+$var wire 1 % C8 $end
+$var wire 1 & C7 $end
+$var wire 1 ' C6 $end
+$var wire 1 ( C5 $end
+$var wire 1 ) C4 $end
+$var wire 1 * C3 $end
+$var wire 1 + C2 $end
+$var wire 1 , C15 $end
+$var wire 1 - C14 $end
+$var wire 1 . C13 $end
+$var wire 1 / C12 $end
+$var wire 1 0 C11 $end
+$var wire 1 1 C10 $end
+$var wire 1 2 C1 $end
+$var wire 1 3 C0 $end
+$var reg 1 4 i_clk $end
+$var reg 5 5 i_flags [4:0] $end
+$var reg 8 6 i_ir_data [7:0] $end
+$var reg 1 7 i_rst_n $end
+$scope module uut $end
+$var wire 1 4 i_clk $end
+$var wire 5 8 i_flags [4:0] $end
+$var wire 8 9 i_ir_data [7:0] $end
+$var wire 1 7 i_rst_n $end
+$var wire 1 # o_IF_stage $end
+$var wire 1 ! o_ctrl_mar_increment $end
+$var wire 1 : o_ctrl_halt $end
+$var wire 4 ; o_alu_op [3:0] $end
+$var wire 2 < next_addr [1:0] $end
+$var wire 24 = control_word [23:0] $end
+$var wire 7 > car_data [6:0] $end
+$var wire 1 $ C9 $end
+$var wire 1 % C8 $end
+$var wire 1 & C7 $end
+$var wire 1 ' C6 $end
+$var wire 1 ( C5 $end
+$var wire 1 ) C4 $end
+$var wire 1 * C3 $end
+$var wire 1 + C2 $end
+$var wire 1 , C15 $end
+$var wire 1 - C14 $end
+$var wire 1 . C13 $end
+$var wire 1 / C12 $end
+$var wire 1 0 C11 $end
+$var wire 1 1 C10 $end
+$var wire 1 2 C1 $end
+$var wire 1 3 C0 $end
+$scope module control_CAR $end
+$var wire 1 4 i_clk $end
+$var wire 1 ? i_ctrl_MF $end
+$var wire 1 @ i_ctrl_NF $end
+$var wire 1 A i_ctrl_ZF $end
+$var wire 5 B i_ir_data [4:0] $end
+$var wire 1 7 i_rst_n $end
+$var wire 4 C ir_data [3:0] $end
+$var wire 1 D indirect_flag $end
+$var wire 2 E i_control_word_car [1:0] $end
+$var reg 1 F indirect_done $end
+$var reg 7 G o_car_data [6:0] $end
+$upscope $end
+$scope module control_CBR $end
+$var wire 2 H next_addr [1:0] $end
+$var wire 24 I memory [23:0] $end
+$var wire 1 ! ctrl_mar_increment $end
+$var wire 1 : ctrl_global_halt $end
+$var wire 1 $ C9 $end
+$var wire 1 % C8 $end
+$var wire 1 & C7 $end
+$var wire 1 ' C6 $end
+$var wire 1 ( C5 $end
+$var wire 1 ) C4 $end
+$var wire 1 * C3 $end
+$var wire 1 + C2 $end
+$var wire 1 , C15 $end
+$var wire 1 - C14 $end
+$var wire 1 . C13 $end
+$var wire 1 / C12 $end
+$var wire 1 0 C11 $end
+$var wire 1 1 C10 $end
+$var wire 1 2 C1 $end
+$var wire 1 3 C0 $end
+$var wire 4 J ALU_op [3:0] $end
+$upscope $end
+$scope module control_memory $end
+$var wire 7 K car [6:0] $end
+$var reg 24 L control_word [23:0] $end
+$upscope $end
+$upscope $end
+$upscope $end
+$enddefinitions $end
+$comment Show the parameter values. $end
+$dumpall
+$end
+#0
+$dumpvars
+b1000000000000000000100 L
+b0 K
+b0 J
+b1000000000000000000100 I
+b10 H
+b0 G
+0F
+b10 E
+0D
+b0 C
+b0 B
+0A
+0@
+0?
+b0 >
+b1000000000000000000100 =
+b10 <
+b0 ;
+0:
+b0 9
+b0 8
+07
+b0 6
+b0 5
+04
+03
+02
+01
+00
+0/
+0.
+0-
+0,
+1+
+0*
+0)
+0(
+0'
+0&
+0%
+0$
+1#
+b0 "
+0!
+$end
+#5000
+14
+#10000
+04
+17
+#15000
+1(
+0#
+0+
+13
+b1000000000000000100001 =
+b1000000000000000100001 I
+b1000000000000000100001 L
+b1 >
+b1 G
+b1 K
+14
+#20000
+04
+#25000
+0(
+1)
+03
+b1000000000000000010000 =
+b1000000000000000010000 I
+b1000000000000000010000 L
+b10 >
+b10 G
+b10 K
+14
+#30000
+b1010 C
+1A
+b1010 B
+04
+b10100 5
+b10100 8
+b11010 6
+b11010 9
+#35000
+1-
+0)
+b1000000100000000000000 =
+b1000000100000000000000 I
+b1000000100000000000000 L
+b11 >
+b11 G
+b11 K
+14
+#40000
+04
+#45000
+b1 <
+b1 E
+b1 H
+1,
+0-
+b100001000000000000000 =
+b100001000000000000000 I
+b100001000000000000000 L
+b100 >
+b100 G
+b100 K
+14
+#50000
+04
+#55000
+b10 <
+b10 E
+b10 H
+b1100 "
+b1100 ;
+b1100 J
+0,
+1&
+1'
+b1011000000000011000000 =
+b1011000000000011000000 I
+b1011000000000011000000 L
+b10111 >
+b10111 G
+b10111 K
+14
+#60000
+b1011 C
+0A
+1@
+b1011 B
+04
+b1010 5
+b1010 8
+b101011 6
+b101011 9
+#65000
+b11 <
+b11 E
+b11 H
+1$
+0&
+0'
+b1111000000001000000000 =
+b1111000000001000000000 I
+b1111000000001000000000 L
+b11000 >
+b11000 G
+b11000 K
+14
+#70000
+04
+#75000
+b10 <
+b10 E
+b10 H
+b0 "
+b0 ;
+b0 J
+0$
+1#
+1+
+b1000000000000000000100 =
+b1000000000000000000100 I
+b1000000000000000000100 L
+b0 >
+b0 G
+b0 K
+14
+#80000
+04
+#85000
+1(
+0#
+0+
+13
+b1000000000000000100001 =
+b1000000000000000100001 I
+b1000000000000000100001 L
+b1 >
+b1 G
+b1 K
+14
+#90000
+04
+#95000
+0(
+1)
+03
+b1000000000000000010000 =
+b1000000000000000010000 I
+b1000000000000000010000 L
+b10 >
+b10 G
+b10 K
+14
+#100000
+b1100 C
+1A
+0@
+1?
+b1100 B
+04
+b11001 5
+b11001 8
+b111100 6
+b111100 9
+#105000
+1-
+0)
+b1000000100000000000000 =
+b1000000100000000000000 I
+b1000000100000000000000 L
+b11 >
+b11 G
+b11 K
+14
+#110000
+04
+#115000
+b1 <
+b1 E
+b1 H
+1,
+0-
+b100001000000000000000 =
+b100001000000000000000 I
+b100001000000000000000 L
+b100 >
+b100 G
+b100 K
+14
+#120000
+04
+#125000
+b10 <
+b10 E
+b10 H
+b1110 "
+b1110 ;
+b1110 J
+0,
+1&
+1'
+b1011100000000011000000 =
+b1011100000000011000000 I
+b1011100000000011000000 L
+b11011 >
+b11011 G
+b11011 K
+14
+#130000
+04
+#135000
+b11 <
+b11 E
+b11 H
+1$
+0&
+0'
+b1111100000001000000000 =
+b1111100000001000000000 I
+b1111100000001000000000 L
+b11100 >
+b11100 G
+b11100 K
+14
+#140000
+04
+#145000
+b10 <
+b10 E
+b10 H
+b0 "
+b0 ;
+b0 J
+0$
+1#
+1+
+b1000000000000000000100 =
+b1000000000000000000100 I
+b1000000000000000000100 L
+b0 >
+b0 G
+b0 K
+14
+#150000
+1D
+b1111 C
+0A
+b11111 B
+04
+b1 5
+b1 8
+b11111111 6
+b11111111 9
+#155000
+1)
+0#
+0+
+b1000000000000000010000 =
+b1000000000000000010000 I
+b1000000000000000010000 L
+1F
+b10 >
+b10 G
+b10 K
+14
+#160000
+04
+#165000
+1-
+0)
+b1000000100000000000000 =
+b1000000100000000000000 I
+b1000000100000000000000 L
+b11 >
+b11 G
+b11 K
+14
+#170000
+04
+#175000
+b1 <
+b1 E
+b1 H
+1,
+0-
+b100001000000000000000 =
+b100001000000000000000 I
+b100001000000000000000 L
+b100 >
+b100 G
+b100 K
+14
+#180000
+04
+#185000
+b10 <
+b10 E
+b10 H
+0,
+1#
+1+
+b1000000000000000000100 =
+b1000000000000000000100 I
+b1000000000000000000100 L
+b0 >
+b0 G
+b0 K
+14
+#190000
+04
+#195000
+1(
+0#
+0+
+13
+b1000000000000000100001 =
+b1000000000000000100001 I
+b1000000000000000100001 L
+b1 >
+b1 G
+b1 K
+14
+#200000
+04
+#205000
+0(
+1)
+03
+b1000000000000000010000 =
+b1000000000000000010000 I
+b1000000000000000010000 L
+b10 >
+b10 G
+b10 K
+14
+#210000
+04
+#215000
+1-
+0)
+b1000000100000000000000 =
+b1000000100000000000000 I
+b1000000100000000000000 L
+b11 >
+b11 G
+b11 K
+14
+#220000
+04
+#225000
+b1 <
+b1 E
+b1 H
+1,
+0-
+b100001000000000000000 =
+b100001000000000000000 I
+b100001000000000000000 L
+b100 >
+b100 G
+b100 K
+14
+#230000
+04
+#235000
+b10 <
+b10 E
+b10 H
+0,
+1#
+1+
+b1000000000000000000100 =
+b1000000000000000000100 I
+b1000000000000000000100 L
+b0 >
+b0 G
+b0 K
+14
+#240000
+04
+#245000
+1(
+0#
+0+
+13
+b1000000000000000100001 =
+b1000000000000000100001 I
+b1000000000000000100001 L
+b1 >
+b1 G
+b1 K
+14
+#250000
+04
