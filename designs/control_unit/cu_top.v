@@ -7,6 +7,8 @@
 // * External Bus
 
 module CU_TOP (
+    ctrl_step_execution,
+    i_next_instr_stimulus,
     i_clk,
     i_rst_n,
     i_flags,
@@ -34,7 +36,8 @@ module CU_TOP (
 );
 
   // External signals
-
+  input ctrl_step_execution;
+  input i_next_instr_stimulus;
   input i_clk;
   input i_rst_n;
   input [7:0] i_ir_data;
@@ -54,13 +57,16 @@ module CU_TOP (
 
 
   CAR control_CAR (
+      .ctrl_step_execution(ctrl_step_execution),
+      .i_next_instr_stimulus(i_next_instr_stimulus),
       .i_clk(i_clk),
       .i_rst_n(i_rst_n),
       .i_control_word_car(next_addr),
-      .i_ir_data({i_ir_data[7],i_ir_data[3:0]}),
+      .i_ir_data({i_ir_data[7], i_ir_data[3:0]}),
       .i_ctrl_ZF(i_flags[4]),
       .i_ctrl_NF(i_flags[1]),
       .i_ctrl_MF(i_flags[0]),
+      .i_ctrl_halt(o_ctrl_halt),
       .o_car_data(car_data)
   );
 

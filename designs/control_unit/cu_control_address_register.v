@@ -8,6 +8,9 @@
 *   00 nothing
 */
 module CAR (
+    ctrl_step_execution,
+    i_ctrl_halt,
+    i_next_instr_stimulus,
     i_clk,
     i_rst_n,
     i_control_word_car,
@@ -17,14 +20,16 @@ module CAR (
     i_ctrl_MF,
     o_car_data
 );
-
+  input wire ctrl_step_execution;
   input wire i_clk;
   input wire i_rst_n;
+  input wire i_next_instr_stimulus;
   input wire [1:0] i_control_word_car;
   input wire [4:0] i_ir_data;  // MSB + IR[3:0]
   input wire i_ctrl_ZF;  // ZF Flag
   input wire i_ctrl_NF;  // NF Flag
   input wire i_ctrl_MF;  // MF Flag
+  input wire i_ctrl_halt;  // C23
   output reg [6:0] o_car_data;
 
   // Indicator of indirect cycle requirement
@@ -79,8 +84,22 @@ module CAR (
             o_car_data <= o_car_data + 1;  // Next Micro-instruction
           end
           2'b11: begin
-            o_car_data    <= 7'h00;  // Fetch next instruction
-            indirect_done <= 1'b0;  // Reset Indirect Flag
+            if (i_ctrl_halt) begin
+              // Previliage HALT
+              o_car_data <= o_car_data;
+            end else if (ctrl_step_execution) begin
+              // Step-by-step instruction fetch
+              if (i_next_instr_stimulus) begin
+                o_car_data    <= 7'h00;
+                indirect_done <= 1'b0;
+              end else begin
+                o_car_data <= o_car_data;
+              end
+            end else begin
+              // Auto fetch
+              o_car_data    <= 7'h00;  // Fetch next instruction
+              indirect_done <= 1'b0;  // Reset Indirect Flag
+            end
           end
           default: o_car_data <= o_car_data;  // Prevent latch
         endcase
