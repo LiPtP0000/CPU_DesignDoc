@@ -7,9 +7,7 @@ module INSTR_ROM (
     i_addr_read,
     o_instr_read,
     o_instr_transmit_done,
-    o_max_addr,
-    o_seg_valid,
-    o_seg_value
+    o_max_addr
 );
   input i_clk_uart;  // Board Freqency: 100MHz
 
@@ -20,8 +18,6 @@ module INSTR_ROM (
   output o_instr_transmit_done;
     output [7:0] o_max_addr;
   
-  output [7:0] o_seg_valid;
-  output [7:0] o_seg_value;
 
   wire valid_uart;
   wire [7:0] data_uart;
@@ -32,6 +28,7 @@ module INSTR_ROM (
   wire clear_fifo;
 
   // CPU Frequency: 50MHz
+  // If we use 100MHz read clk, the UART will fail
   // Sync Reset
   wire clk;
 
@@ -71,9 +68,6 @@ module INSTR_ROM (
       .i_instr_write(data_bram),
       .o_max_addr(o_max_addr)
   );
-
-
-
 
   assign o_instr_transmit_done = clear_uart & clear_fifo;
 endmodule

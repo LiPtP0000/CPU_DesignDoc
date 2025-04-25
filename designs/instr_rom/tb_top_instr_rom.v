@@ -12,8 +12,6 @@ module tb_INIT_INSTR_BRAM;
 
   wire [15:0] o_instr_read;
   wire o_instr_transmit_done;
-  wire [7:0] o_seg_valid;
-  wire [7:0] o_seg_value;
   // 实例化顶层模块
   INSTR_ROM uut (
     .i_clk_uart(clk_uart),
@@ -23,9 +21,7 @@ module tb_INIT_INSTR_BRAM;
     .i_addr_read(i_addr_read),
     .o_instr_read(o_instr_read),
     .o_instr_transmit_done(o_instr_transmit_done),
-    .o_max_addr(o_max_addr),
-    .o_seg_valid(o_seg_valid),
-    .o_seg_value(o_seg_value)
+    .o_max_addr(o_max_addr)
   );
 
   // UART 时钟 100MHz（10ns周期）
