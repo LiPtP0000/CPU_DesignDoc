@@ -32,7 +32,13 @@ module MAR (
       if (ctrl_mar_increment) begin
         MAR <= MAR + 1;
       end else begin
-        MAR <= i_mbr_mar ? i_mbr_mar : i_pc_mar ? i_pc_mar : MAR;
+        if (i_mbr_mar != 8'b0) begin
+          MAR <= i_mbr_mar;
+        end else if (i_pc_mar != 8'b0) begin
+          MAR <= i_pc_mar;
+        end else begin
+          MAR <= MAR;
+        end
       end
     end
   end

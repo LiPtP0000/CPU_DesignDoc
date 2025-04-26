@@ -53,14 +53,17 @@ module MBR (
     if (!i_rst_n) begin
       MBR <= 16'b0;
     end else begin
-      // cases is better on writing many possibilities
-      case (1'b1)
-        i_data_bus_mbr: MBR <= i_data_bus_mbr;
-        i_ir_mbr:       MBR <= i_ir_mbr;
-        i_pc_mbr:       MBR <= i_pc_mbr;
-        i_acc_mbr:      MBR <= i_acc_mbr;
-        default:        MBR <= MBR;
-      endcase
+      if (i_data_bus_mbr != 16'b0) begin
+        MBR <= i_data_bus_mbr;
+      end else if (i_ir_mbr != 8'b0) begin
+        MBR <= {8'b0, i_ir_mbr};
+      end else if (i_pc_mbr != 8'b0) begin
+        MBR <= {8'b0, i_pc_mbr};
+      end else if (i_acc_mbr != 16'b0) begin
+        MBR <= i_acc_mbr;
+      end else begin
+        MBR <= MBR;
+      end
     end
   end
 
