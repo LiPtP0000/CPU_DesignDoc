@@ -35,7 +35,6 @@ always @(posedge i_clk or negedge i_rst_n) begin
         else if (i_mbr_acc != 16'b0) begin
             ACC <= i_mbr_acc;
         end
-
         else begin
             ACC <= ACC;
         end
@@ -43,5 +42,5 @@ always @(posedge i_clk or negedge i_rst_n) begin
 end
 
 assign o_acc_alu_p = C7 ? ACC : 16'b0;
-assign o_acc_mbr   = C12 ? ACC : 16'b0;
+assign o_acc_mbr = C12 ? ACC : 16'b0;
 endmodule
