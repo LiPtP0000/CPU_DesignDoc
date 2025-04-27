@@ -1,8 +1,10 @@
+// 2025.4.28 Add read enable signal to this module
 `timescale 1ns / 1ps
 
 module BRAM_INSTR (
     i_clk,
     en_write,
+    en_read,
     i_addr_write,
     i_addr_read,
     o_instr_read,
@@ -11,6 +13,7 @@ module BRAM_INSTR (
 );
   input i_clk;
   input en_write;                   // flag of write instructions.
+  input en_read;                    // flag of read instructions.
   input [7:0] i_addr_write;         // address of the upcoming instruction
   input [15:0] i_instr_write;       // content of the upcoming instruction
   input [7:0] i_addr_read;          // address of instruction to be read
@@ -24,7 +27,9 @@ module BRAM_INSTR (
     if (en_write) begin
         mem[i_addr_write] <= i_instr_write;
     end 
-    o_instr_read <= mem[i_addr_read];
+    else if(en_read) begin
+        o_instr_read <= mem[i_addr_read];
+    end
   end
 
   always @(posedge i_clk) begin

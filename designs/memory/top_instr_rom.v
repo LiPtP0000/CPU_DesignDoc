@@ -4,6 +4,7 @@ module INSTR_ROM (
     i_clk_uart,
     i_rst_n,
     i_rx,
+    en_read,
     i_addr_read,
     o_instr_read,
     o_instr_transmit_done,
@@ -13,6 +14,7 @@ module INSTR_ROM (
 
   input i_rst_n;  // Global Reset
   input i_rx;
+  input en_read;  // Read Enable Signal
   input [7:0] i_addr_read;
     output [15:0] o_instr_read;
   output o_instr_transmit_done;
@@ -62,6 +64,7 @@ module INSTR_ROM (
   BRAM_INSTR instr_load_bram (
       .i_clk(clk),
       .en_write(enable_write_bram),
+      .en_read(en_read), 
       .i_addr_write(addr_bram),
       .i_addr_read(i_addr_read),
       .o_instr_read(o_instr_read),

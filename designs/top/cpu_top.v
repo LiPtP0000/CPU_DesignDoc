@@ -15,108 +15,141 @@ The user interface should acknowledge part of CPU status and provide input to CP
 module TOP_CPU(
            i_clk,
            i_rst_n
+           ctrl_step_execution,
+           i_next_instr_stimulus,
+           i_rx,
+           o_instr_transmit_done,
+           o_max_addr
        );
 
 input i_clk;
 input i_rst_n;
 
+// from/to user interface
+input ctrl_step_execution;
+input i_next_instr_stimulus;
+input i_rx;
+output o_instr_transmit_done;
+output o_max_addr;
 
-wire [15:0] MBR_MEMORY;
-wire [15:0] MEMORY_MBR;
-wire [7:0] MAR_MEMORY;
+// external bus
+wire [15:0] MBR_DATA_BUS;
+wire [15:0] DATA_BUS_MBR;
+wire [15:0] DATA_BUS_MEMORY;
+wire [15:0] INSTR_MEMORY_DATA_BUS;
+wire [15:0] DATA_MEMORY_DATA_BUS;
+wire [7:0] MAR_ADDR_BUS;
+wire [7:0] ADDR_BUS_MEMORY;
+wire en_write_to_instr;
+wire en_write_to_data;
+wire en_read_from_data;
+wire en_read_from_instr;
+
+// internal registers & CU
 wire C0,C1,C2,C3,C4,C5,C6,C7,C8,C9,C10,C11,C12,C13,C14,C15;
+wire [4:0] flags;
+wire [7:0] opcode;
+wire [3:0] alu_op;
+wire halt;
+wire mar_increment;
+
 
 EXTERNAL_BUS external_bus(
                  .i_clk(i_clk),
                  .i_rst_n(i_rst_n),
-                 .i_mbr_data_bus(MBR_MEMORY),
-                 .i_mar_address_bus(MAR_MEMORY),
-                 .o_data_bus_memory(MBR_MEMORY),
-                 .o_address_bus_memory,
-                 .o_data_ram_write,
-                 .o_instr_rom_read,
-                 .o_data_ram_read,
-                 .o_data_ram_write,
-                 .C0,
-                 .C2,
-                 .C5,
-                 .C13
+                 .i_mbr_data_bus(MBR_DATA_BUS),
+                 .i_mar_address_bus(MAR_ADDR_BUS),
+                 .o_data_bus_memory(DATA_BUS_MEMORY),
+                 .o_address_bus_memory(ADDR_BUS_MEMORY),
+                 .o_data_ram_write(en_write_to_data),
+                 .o_instr_rom_read(en_read_from_instr),
+                 .o_data_ram_read(en_read_from_data),
+                 .C0(C0),
+                 .C2(C2),
+                 .C5(C5),
+                 .C13(C13),
+           .i_instr(INSTR_MEMORY_DATA_BUS),
+           .i_data(DATA_MEMORY_DATA_BUS),
+           .o_data_bus_mbr(DATA_BUS_MBR)
+
              );
 DATA_RAM data_ram(
-             i_clk,
-             i_rst_n,
-             ctrl_write,
-             i_addr_write,
-             i_data_write,
-             ctrl_read,
-             i_addr_read,
-             o_data_read
+             i_clk(i_clk),
+             i_rst_n(i_rst_n),
+             ctrl_write(en_write_to_data),
+             i_addr_write(ADDR_BUS_MEMORY),
+             i_data_write(DATA_BUS_MEMORY),
+             ctrl_read(en_read_from_data),
+             i_addr_read(ADDR_BUS_MEMORY),
+             o_data_read(DATA_MEMORY_DATA_BUS)
          );
 
+// need to add enable read signals
 INSTR_ROM instruction_rom(
-              .i_clk_uart,
-              .i_rst_n,
-              .i_rx,
-              .i_addr_read,
-              .o_instr_read,
-              .o_instr_transmit_done,
-              .o_max_addr
+              .i_clk_uart(i_clk),
+              .i_rst_n(i_rst_n),
+              .i_rx(i_rx),
+              .en_read(en_read_from_instr),
+              .i_addr_read(ADDR_BUS_MEMORY),
+              .o_instr_read(INSTR_MEMORY_DATA_BUS),
+              .o_instr_transmit_done(o_instr_transmit_done),
+              .o_max_addr(o_max_addr)
           );
 
 REG_TOP internal_registers(
             .i_clk(i_clk),
             .i_rst_n(i_rst_n),
-            .i_memory_data,
-            .o_memory_addr,
-            .o_memory_data,
-            .o_ir_cu,
-            .o_flags,
-            .i_alu_op,
-            .i_ctrl_halt,
-            .i_ctrl_mar_increment,
-            .C0,
-            .C1,
-            .C2,
-            .C3,
-            .C4,
-            .C5,
-            .C6,
-            .C7,
-            .C8,
-            .C9,
-            .C10,
-            .C11,
-            .C12,
-            .C13,
-            .C14,
-            .C15
+            .i_memory_data(DATA_BUS_MBR),
+            .o_memory_addr(MAR_ADDR_BUS),
+            .o_memory_data(MBR_DATA_BUS),
+            .o_ir_cu(opcode),
+            .o_flags(flags),
+            .i_alu_op(alu_op),
+            .i_ctrl_halt(halt),
+            .i_ctrl_mar_increment(mar_increment),
+            .C0(C0),
+            .C1(C1),
+            .C2(C2),
+            .C3(C3),
+            .C4(C4),
+            .C5(C5),
+            .C6(C6),
+            .C7(C7),
+            .C8(C8),
+            .C9(C9),
+            .C10(C10),
+            .C11(C11),
+            .C12(C12),
+            .C13(C13),
+            .C14(C14),
+            .C15(C15)
         );
 CU_TOP control_unit(
-           .ctrl_step_execution,
-           .i_next_instr_stimulus,
-           .i_clk,
-           .i_rst_n,
-           .i_flags,
-           .i_ir_data,
-           .o_alu_op,
-           .o_ctrl_halt,
-           .o_IF_stage,
-           .o_ctrl_mar_increment,
-           .C0,
-           .C1,
-           .C2,
-           .C3,
-           .C4,
-           .C5,
-           .C6,
-           .C7,
-           .C8,
-           .C9,
-           .C10,
-           .C11,
-           .C12,
-           .C13,
-           .C14,
-           .C15
+           .ctrl_step_execution(ctrl_step_execution),
+           .i_next_instr_stimulus(i_next_instr_stimulus),
+           .i_clk(i_clk),
+           .i_rst_n(i_rst_n),
+           .i_flags(flags),
+           .i_ir_data(opcode),
+           .o_alu_op(alu_op),
+           .o_ctrl_halt(halt),
+           .o_IF_stage(),
+           .o_ctrl_mar_increment(mar_increment),
+           .C0(C0),
+           .C1(C1),
+           .C2(C2),
+           .C3(C3),
+           .C4(C4),
+           .C5(C5),
+           .C6(C6),
+           .C7(C7),
+           .C8(C8),
+           .C9(C9),
+           .C10(C10),
+           .C11(C11),
+           .C12(C12),
+        .C13(C13),
+        .C14(C14),
+        .C15(C15)
        );
 endmodule

@@ -774,10 +774,10 @@ CPU设有\textbf{全局异步复位}信号，低电平有效。当异步复位�
   \endhead
   
   \texttt{i\_clk\_uart} & 输入 & 1 & 时钟信号（100MHz） \\
-  \texttt{i\_clk} & 输入 & 1 & 系统时钟信号（50MHz） \\
+  % \texttt{i\_clk} & 输入 & 1 & 系统时钟信号（50MHz） \\
   \texttt{i\_rst\_n} & 输入 & 1 & 全局复位信号 \\
   \texttt{i\_rx} & 输入 & 1 & 绑定至UART接收引脚 \\
-  \texttt{i\_addr\_read} & 输入 & 8 & 读ROM地址 \\
+  \texttt{i\_addr\_read} & 输入 & 8 & 读RAM地址 \\
   \texttt{o\_instr\_read} & 输出 & 16 & 指令输出信号 \\
   \texttt{o\_instr\_transmit\_done} & 输出 & 1 & （安全的）指令完成传入标志 \\
   \texttt{o\_max\_addr} & 输出 & 8 & 最大地址输出 \\
@@ -864,7 +864,7 @@ CPU设有\textbf{全局异步复位}信号，低电平有效。当异步复位�
   \item 是否经过测试：是
 \end{itemize}
 \paragraph{模块功能：}
-描述一指令块RAM，可存放256条2byte指令。读写双口，拥有写使能（FIFO传入）。外部设备可通过地址读取对应地址的2byte指令。
+描述一指令块RAM，可存放256条2byte指令。读写双口，拥有写使能（FIFO传入）。外部设备可通过地址读取对应地址的2byte指令。\textbf{该模块使用50MHz时钟}，以避免时钟差距太大导致的传输错误。
 \paragraph{模块外部接口：}
 \begin{longtable}{>{\bfseries}c c c c}
   \caption{指令BRAM模块外部接口} \\
@@ -897,17 +897,21 @@ CPU设有\textbf{全局异步复位}信号，低电平有效。当异步复位�
 
 
 \subsection{控制单元}
-控制单元由CAR、CBR寄存器和CM（Control Memory）只读模块组成。控制单元通过微操作指令和控制信号控制整个系统。整个控制单元的结构如图~\ref{fig:controlunit}~所示。
-
+控制单元由CAR、CBR寄存器和CM（Control Memory）只读模块组成。控制单元通过将存储于CM的微操作指令和控制信号输出至CBR后，再通过内部控制总线输出到各个单元（寄存器、ALU、外部总线）控制整个系统。控制单元每个时钟周期执行一条微操作指令，由表~\ref{tab:five_stage_pipeline}~可知平均每条指令需要执行8条微操作指令，故每条指令约需要8个周期执行完成。
 \subsubsection{Control Memory}
 \paragraph{模块基本信息：}
 \begin{itemize}
-  \item 模块名：\texttt{cu\_control\_memory}
+  \item 模块名：\texttt{CONTROL\_MEMORY}
   \item 最新更新日期：\texttt{4.23}
   \item 是否经过测试：否
 \end{itemize}
 \paragraph{模块功能：}
-全局复位时存储CPU的水平微操作指令。微操作指令表参考表~\ref{tab:five_stage_pipeline_ctrl}~。
+存储CPU的水平微操作指令，并根据输入的微操作指令地址写出控制信号到CBR。微操作指令表参考表~\ref{tab:five_stage_pipeline_ctrl}~。另外，为了更好地支持乘法后存储高位、跳转补全周期等操作，CM还存储了两条非指令集中的指令：
+\texttt{NOP}和\texttt{STOREH}。它们的作用分别是：
+\begin{itemize}
+  \item \texttt{NOP}：无操作指令，CPU在执行该指令时不进行任何操作。该指令的作用是占位，保证JGZ指令可以和其余指令执行时间相同。
+  \item \texttt{STOREH}：存储高位指令，在上一条指令为乘法时，若本次指令为STORE，则在存放ACC寄存器后，继续将MR寄存器的高位通过ACC寄存器存入地址+1位置的内存。该指令的作用是将乘法运算的高位低位结果都存储到内存中。
+\end{itemize}
 \paragraph{模块外部接口：}
 \begin{longtable}{>{\bfseries}c c c c}
   \caption{Control Memory模块外部接口} \\
@@ -922,24 +926,22 @@ CPU设有\textbf{全局异步复位}信号，低电平有效。当异步复位�
   \midrule
   \endhead
 
-  \texttt{i\_clk}          & 输入  & 1        & 系统时钟信号，驱动读写操作 \\
-  \texttt{i\_rst\_n}      & 输入    & 1       & 全局复位，此时重新写入全部指令\\
-  \texttt{i\_addr\_read}   & 输入  & 8        & 要读取的指令地址 \\
-  \texttt{o\_signal\_read}  & 输出  & 16       & 从 BRAM 中读取的指令内容 \\
+  \texttt{car}   & 输入  & 7        & 要读取的微操作指令地址 \\
+  \texttt{control\_word}  & 输出  & 24       & 从 CM 中读取的控制信号 \\
   \bottomrule
 \end{longtable}
-\subsubsection{Sequencing Logic}
+\subsubsection{CAR}
 \paragraph{模块基本信息：}
 \begin{itemize}
-  \item 模块名：\texttt{cu\_sequencing\_logic}
+  \item 模块名：\texttt{CAR}
   \item 最新更新日期：\texttt{4.23}
   \item 是否经过测试：否
 \end{itemize}
 \paragraph{模块功能：}
-根据CBR反馈的“下一条地址”逻辑以及控制信号，综合判断出下一条指令。
+根据CBR反馈的“下一条地址”逻辑、IR Opcode 和 ALU输出Flags，综合判断出下一条指令所在地址。
 \paragraph{模块外部接口：}
 \begin{longtable}{>{\bfseries}c c c c}
-  \caption{Sequencing Logic模块外部接口} \\
+  \caption{CAR模块外部接口} \\
   \toprule
   信号名 & 方向 & 位宽 & 描述 \\
   \midrule
@@ -957,7 +959,7 @@ CPU设有\textbf{全局异步复位}信号，低电平有效。当异步复位�
   \texttt{o\_signal\_read}  & 输出  & 16       & 从 BRAM 中读取的指令内容 \\
   \bottomrule
 \end{longtable}
-\subsection{基础模块设计}
+\subsection{内部寄存器和ALU设计}
 \subsubsection{ALU}
 ALU运算结果存放于MR寄存器和ACC寄存器中。其中MR寄存器存放乘法运算的高位结果，ACC寄存器存放乘法运算的低位结果。
 \subsubsection{MAR}
@@ -965,8 +967,11 @@ ALU运算结果存放于MR寄存器和ACC寄存器中。其中MR寄存器存放�
 \subsubsection{PC}
 \subsubsection{IR}
 \subsubsection{ACC}
+\subsection{内存设计}
 \subsubsection{数据RAM}
-\subsubsection{Control Unit}
+\subsection{外部总线设计}
+
+
 
 参考表~\ref{tab:CPU:DataPath}~，确定指令集中的每一条指令对应的控制信号，并存储到CU的内部寄存器中，即可完成CU的主要功能设计。
 
@@ -1012,9 +1017,36 @@ LOOP: LOAD 1
 \addappheadtotoc
 \begin{appendices}
   \section{完整设计代码}
+  该部分以数据流向和CPU从内向外的顺序，给出设计的完整代码。顶层模块放在每节的最后，展示了各个模块的连接方式。另外，该项目代码已开源于\href{https://github.com/LiPtP0000/CPU_Design}{Github}，欢迎提交项目相关的issues或PR。
   \subsection{汇编程序处理Python脚本}\label{sec:appendices:python}
   \lstinputlisting[language=python,caption={write\_bistream.py}]{../designs/input_src/write_bitstream.py}
+  \subsection{UART接收与指令RAM模块}\label{sec:appendices:uart}
+  该部分包含了UART接收模块、FIFO模块和指令RAM模块的设计代码以及测试Testbench。
+  \lstinputlisting[language=verilog,caption={uart.v}]{../designs/memory/uart.v}
+  \lstinputlisting[language=verilog,caption={fifo.v}]{../designs/memory/fifo.v}
+  \lstinputlisting[language=verilog,caption={bram\_instr.v}]{../designs/memory/bram_instr.v}
+  \lstinputlisting[language=verilog,caption={clk\_divider.v}]{../designs/memory/clk_divider.v}
+  \lstinputlisting[language=verilog,caption={top\_instr\_rom.v}]{../designs/memory/top_instr_rom.v}
   
+  
+  \subsection{控制单元设计}\label{sec:appendices:control}
+  \lstinputlisting[language=verilog,caption={cu\_control\_memory.v}]{../designs/control_unit/cu_control_memory.v}
+  \lstinputlisting[language=verilog,caption={cu\_control\_address\_register.v}]{../designs/control_unit/cu_control_address_register.v}
+  \lstinputlisting[language=verilog,caption={cu\_control\_buffer\_register.v}]{../designs/control_unit/cu_control_buffer_register.v}
+  \lstinputlisting[language=verilog,caption={cu\_top.v}]{../designs/control_unit/cu_top.v}
+  \subsection{内部寄存器与ALU设计}\label{sec:appendices:alu}
+  \lstinputlisting[language=verilog,caption={alu.v}]{../designs/registers/alu.v}
+  \lstinputlisting[language=verilog,caption={acc.v}]{../designs/registers/acc.v}
+  \lstinputlisting[language=verilog,caption={mar.v}]{../designs/registers/mar.v}
+  \lstinputlisting[language=verilog,caption={mbr.v}]{../designs/registers/mbr.v}
+  \lstinputlisting[language=verilog,caption={pc.v}]{../designs/registers/pc.v}
+  \lstinputlisting[language=verilog,caption={ir.v}]{../designs/registers/ir.v}
+  \lstinputlisting[language=verilog,caption={reg\_top.v}]{../designs/registers/reg_top.v}
+  \subsection{数据内存设计}\label{sec:appendices:ram}
+  \lstinputlisting[language=verilog,caption={top\_data\_ram.v}]{../designs/memory/top_data_ram.v}
+  \subsection{外部总线设计}\label{sec:appendices:externalbus}
+  \lstinputlisting[language=verilog,caption={external\_bus.v}]{../designs/memory/external_bus.v}
+  \subsection{用户面设计}\label{sec:appendices:user}
 \end{appendices}
 
 \end{document}
