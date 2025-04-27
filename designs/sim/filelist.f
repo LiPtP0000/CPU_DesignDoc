@@ -15,5 +15,5 @@
 ../control_unit/cu_control_address_register.v
 ../control_unit/cu_control_buffer_register.v
 ../control_unit/cu_control_memory.v
-../control_unit/cu_control_top.v
+../control_unit/cu_top.v
 ../top/cpu_top.v
