@@ -22,8 +22,7 @@ module MBR (
            C4,
            C6,
            C8,
-           C11,
-           C13
+           C11
        );
 input i_clk;
 input i_rst_n;
@@ -36,7 +35,6 @@ input C4;
 input C6;
 input C8;
 input C11;
-input C13;
 output [15:0] o_mbr_data_bus;
 output [7:0] o_mbr_pc;
 
@@ -73,9 +71,13 @@ always @(posedge i_clk or negedge i_rst_n) begin
 end
 
 assign o_mbr_acc = C11 ? MBR : 16'b0;
-assign o_mbr_data_bus = C13 ? MBR : 16'b0;
+
 assign o_mbr_alu_q = C6 ? MBR : 16'b0;
 assign o_mbr_ir = C4 ? MBR : 16'b0;
 assign o_mbr_mar = C8 ? MBR[7:0] : 8'b0;
 assign o_mbr_pc = C3 ? MBR[7:0] : 8'b0;
+
+// Data bus judgement logic at reg_top
+assign o_mbr_data_bus = MBR;
+
 endmodule

@@ -50,6 +50,7 @@ input C0, C1, C2, C3, C4, C5, C6, C7, C8, C9, C10, C11, C12, C13, C14, C15;
 // To External Bus
 output [7:0] o_memory_addr;
 output [15:0] o_memory_data;
+output o_memory_en;
 
 // To Control Unit
 output [7:0] o_ir_cu;
@@ -114,8 +115,7 @@ MBR reg_MBR(
         .C4(C4),
         .C6(C6),
         .C8(C8),
-        .C11(C11),
-        .C13(C13)
+        .C11(C11)
     );
 
 MAR reg_MAR(
@@ -123,7 +123,6 @@ MAR reg_MAR(
         .i_rst_n(i_rst_n),
         .i_mbr_mar(MBR_MAR),
         .i_pc_mar(PC_MAR),
-        .C0(C0),
         .ctrl_mar_increment(i_ctrl_mar_increment),
         .o_mar_address_bus(MAR_ADDR_BUS)
     );
@@ -151,9 +150,9 @@ IR reg_IR(
    );
 
 // Assignments to external bus
-// When halt, the bus is not used, so we assign 0
-assign o_memory_data = i_ctrl_halt? 16'b0 : MBR_DATA_BUS;
-assign o_memory_addr = i_ctrl_halt? 8'b0 : MAR_ADDR_BUS;
+// Logic are defined in external_bus module
+assign o_memory_data = MBR_DATA_BUS;
+assign o_memory_addr = MAR_ADDR_BUS;
 assign DATA_BUS_MBR = i_memory_data;
 
 // Assignments to CU

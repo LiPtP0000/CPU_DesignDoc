@@ -11,13 +11,11 @@ module MAR (
     i_rst_n,
     i_mbr_mar,
     i_pc_mar,
-    C0,
     ctrl_mar_increment,
     o_mar_address_bus
 );
   input i_clk;
   input i_rst_n;
-  input C0;
   input ctrl_mar_increment;
   input [7:0] i_mbr_mar;
   input [7:0] i_pc_mar;
@@ -43,5 +41,6 @@ module MAR (
     end
   end
 
-  assign o_mar_address_bus = C0 ? MAR : 8'b0;
+  // Address bus judgement logic at reg_top
+  assign o_mar_address_bus = MAR;
 endmodule
