@@ -45,8 +45,8 @@ output [7:0] o_address_bus_memory;
 wire memory_read_en = C0 & C5; // Memory read enable, 
 wire memory_write_en = C0 & C13; // Memory write enable
 
-wire [15:0] DATA_BUS;
-wire [7:0] ADDRESS_BUS;
+reg [15:0] DATA_BUS;
+reg [7:0] ADDRESS_BUS;
 
 reg memory_select;
 

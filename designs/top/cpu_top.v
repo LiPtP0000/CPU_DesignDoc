@@ -30,7 +30,7 @@ input ctrl_step_execution;
 input i_next_instr_stimulus;
 input i_rx;
 output o_instr_transmit_done;
-output o_max_addr;
+output [7:0] o_max_addr;
 
 // external bus
 wire [15:0] MBR_DATA_BUS;
@@ -68,20 +68,20 @@ EXTERNAL_BUS external_bus(
                  .C2(C2),
                  .C5(C5),
                  .C13(C13),
-           .i_instr(INSTR_MEMORY_DATA_BUS),
-           .i_data(DATA_MEMORY_DATA_BUS),
-           .o_data_bus_mbr(DATA_BUS_MBR)
+                 .i_instr(INSTR_MEMORY_DATA_BUS),
+                 .i_data(DATA_MEMORY_DATA_BUS),
+                 .o_data_bus_mbr(DATA_BUS_MBR)
 
              );
 DATA_RAM data_ram(
-             i_clk(i_clk),
-             i_rst_n(i_rst_n),
-             ctrl_write(en_write_to_data),
-             i_addr_write(ADDR_BUS_MEMORY),
-             i_data_write(DATA_BUS_MEMORY),
-             ctrl_read(en_read_from_data),
-             i_addr_read(ADDR_BUS_MEMORY),
-             o_data_read(DATA_MEMORY_DATA_BUS)
+             .i_clk(i_clk),
+             .i_rst_n(i_rst_n),
+             .ctrl_write(en_write_to_data),
+             .i_addr_write(ADDR_BUS_MEMORY),
+             .i_data_write(DATA_BUS_MEMORY),
+             .ctrl_read(en_read_from_data),
+             .i_addr_read(ADDR_BUS_MEMORY),
+             .o_data_read(DATA_MEMORY_DATA_BUS)
          );
 
 // need to add enable read signals
@@ -149,8 +149,8 @@ CU_TOP control_unit(
            .C10(C10),
            .C11(C11),
            .C12(C12),
-        .C13(C13),
-        .C14(C14),
-        .C15(C15)
+           .C13(C13),
+           .C14(C14),
+           .C15(C15)
        );
 endmodule
