@@ -7,7 +7,7 @@
 // * External Bus
 // 4.28 Update: Add start_cpu signal to control the CPU execution
 module CU_TOP (
-            ctrl_cpu_start,
+           ctrl_cpu_start,
            ctrl_step_execution,
            i_next_instr_stimulus,
            i_clk,
@@ -37,7 +37,7 @@ module CU_TOP (
        );
 
 // External signals
-input ctrl_cpu_start; 
+input ctrl_cpu_start;
 input ctrl_step_execution;
 input i_next_instr_stimulus;
 input i_clk;
@@ -79,6 +79,7 @@ CONTROL_MEMORY control_memory (
                );
 
 CBR control_CBR (
+        .ctrl_cpu_start(ctrl_cpu_start),
         .memory(control_word),
         .ctrl_global_halt(o_ctrl_halt),
         .ctrl_mar_increment(o_ctrl_mar_increment),

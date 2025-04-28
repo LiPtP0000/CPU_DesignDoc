@@ -28,7 +28,7 @@ module FIFO (
   // for judging completion
   output o_fifo_empty;
 
-  localparam DEPTH = 16;  // FIFO depth
+  localparam DEPTH = 16;  // FIFO depth, for storing full commands
   localparam ADDR_WIDTH = 4;  // Address for FIFO
 
   reg [7:0] fifo_mem[0:DEPTH-1];
@@ -38,12 +38,13 @@ module FIFO (
   reg [ADDR_WIDTH:0] wr_ptr_gray_sync1, wr_ptr_gray_sync2;
   reg [ADDR_WIDTH:0] rd_ptr_gray_sync1, rd_ptr_gray_sync2;
 
-  wire fifo_empty = (rd_ptr_gray_sync2 == wr_ptr_gray);
-  wire fifo_full  = ((wr_ptr_gray[ADDR_WIDTH]     != rd_ptr_gray_sync2[ADDR_WIDTH]) &&
-                       (wr_ptr_gray[ADDR_WIDTH-1:0] == rd_ptr_gray_sync2[ADDR_WIDTH-1:0]));
+  // Read is faster than Write, so we use newer wr_sync pointer
+  wire fifo_empty = (wr_ptr_gray_sync2 == rd_ptr_gray);
+  wire fifo_full  = ((rd_ptr_gray[ADDR_WIDTH]     != wr_ptr_gray_sync2[ADDR_WIDTH]) &&
+                       (rd_ptr_gray[ADDR_WIDTH-1:0] == wr_ptr_gray_sync2[ADDR_WIDTH-1:0]));
 
   // -------------------------------
-  // Write Time Zone (UART, 100MHz)
+  // Write Time Zone (UART, 1.8432MHz)
   // -------------------------------
   always @(posedge i_clk_wr or negedge i_rst_n) begin
     if (!i_rst_n) begin
@@ -94,7 +95,7 @@ module FIFO (
           data_buffer <= fifo_mem[rd_ptr_bin[ADDR_WIDTH-1:0]];
           byte_flag   <= 1;
         end else begin
-          o_data_bram  <= {data_buffer, fifo_mem[rd_ptr_bin[ADDR_WIDTH-1:0]]};  // 高字节在前
+          o_data_bram  <= {data_buffer, fifo_mem[rd_ptr_bin[ADDR_WIDTH-1:0]]};  // opcode + operand
           o_addr_bram  <= o_addr_bram + 1;
           o_wr_en_bram <= 1;
           byte_flag    <= 0;

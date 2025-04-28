@@ -18,11 +18,15 @@ module MBR (
            o_mbr_mar,
            o_mbr_acc,
            o_mbr_alu_q,
+           C1,
            C3,
            C4,
+           C5,
            C6,
            C8,
-           C11
+           C11,
+           C12,
+           C15
        );
 input i_clk;
 input i_rst_n;
@@ -30,11 +34,15 @@ input [7:0] i_pc_mbr;
 input [7:0] i_ir_mbr;
 input [15:0] i_data_bus_mbr;
 input [15:0] i_acc_mbr;
+input C1;
 input C3;
 input C4;
+input C5;
 input C6;
 input C8;
 input C11;
+input C12;
+input C15;
 output [15:0] o_mbr_data_bus;
 output [7:0] o_mbr_pc;
 
@@ -52,16 +60,16 @@ always @(posedge i_clk or negedge i_rst_n) begin
         MBR <= 16'b0;
     end
     else begin
-        if (i_data_bus_mbr != 16'b0) begin
+        if (C5) begin
             MBR <= i_data_bus_mbr;
         end
-        else if (i_ir_mbr != 8'b0) begin
+        else if (C15) begin
             MBR <= {8'b0, i_ir_mbr};
         end
-        else if (i_pc_mbr != 8'b0) begin
+        else if (C1) begin
             MBR <= {8'b0, i_pc_mbr};
         end
-        else if (i_acc_mbr != 16'b0) begin
+        else if (C12) begin
             MBR <= i_acc_mbr;
         end
         else begin

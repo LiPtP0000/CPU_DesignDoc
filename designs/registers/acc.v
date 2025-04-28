@@ -5,6 +5,9 @@ module ACC (
            i_mr_acc,
            i_mbr_acc,
            C7,
+           C9,
+           C10,
+           C11,
            C12,
            o_acc_alu_p,
            o_acc_mbr
@@ -15,6 +18,9 @@ input [15:0] i_br_acc;
 input [15:0] i_mr_acc;
 input [15:0] i_mbr_acc;
 input C7;
+input C9;
+input C10;
+input C11;
 input C12;
 output [15:0] o_acc_alu_p;
 output [15:0] o_acc_mbr;
@@ -26,13 +32,13 @@ always @(posedge i_clk or negedge i_rst_n) begin
         ACC <= 16'b0;
     end
     else begin
-        if (i_br_acc != 16'b0) begin
+        if (C9) begin
             ACC <= i_br_acc;
         end
-        else if (i_mr_acc != 16'b0) begin
+        else if (C10) begin
             ACC <= i_mr_acc;
         end
-        else if (i_mbr_acc != 16'b0) begin
+        else if (C11) begin
             ACC <= i_mbr_acc;
         end
         else begin

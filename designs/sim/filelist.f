@@ -1,3 +1,4 @@
+# For tb_cpu.v
 ../registers/acc.v
 ../registers/alu.v
 ../registers/mar.v
@@ -17,3 +18,4 @@
 ../control_unit/cu_control_memory.v
 ../control_unit/cu_top.v
 ../top/cpu_top.v
+./tb_cpu.v

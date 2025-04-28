@@ -46,7 +46,7 @@ wire memory_read_en = C0 & C5; // Memory read enable,
 wire memory_write_en = C0 & C13; // Memory write enable
 
 reg [15:0] DATA_BUS;
-reg [7:0] ADDRESS_BUS;
+wire [7:0] ADDRESS_BUS = i_mar_address_bus;
 
 reg memory_select;
 
@@ -65,15 +65,7 @@ always @(posedge i_clk or i_rst_n) begin
     end
 end
 
-// Address Bus
-always @(*) begin
-    if(memory_write_en) begin
-        ADDRESS_BUS = i_mar_address_bus;
-    end
-    else begin
-        ADDRESS_BUS = 8'b0;
-    end
-end
+
 
 // Data Bus
 always @(*) begin
@@ -98,5 +90,7 @@ assign o_data_ram_write = ~memory_select & memory_write_en;
 
 assign o_data_bus_mbr = memory_read_en ? DATA_BUS : 16'b0;
 assign o_data_bus_memory = memory_write_en ? DATA_BUS : 16'b0;
-assign o_address_bus_memory = memory_write_en ? ADDRESS_BUS : 8'b0;
+
+// memory r/w both need address bus
+assign o_address_bus_memory = (memory_write_en || memory_read_en) ? ADDRESS_BUS : 8'b0;
 endmodule

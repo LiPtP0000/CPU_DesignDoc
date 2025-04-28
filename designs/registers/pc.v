@@ -4,6 +4,7 @@ Author: LiPtP
 function:
 1. self increment upon C2
 2. write value sequence: MBR
+3. PC starts from 1 (0428 updated)
 */
 module PC (
            i_clk,
@@ -26,7 +27,7 @@ reg [7:0] PC;
 
 always @(posedge i_clk or negedge i_rst_n) begin
     if (!i_rst_n) begin
-        PC <= 8'b0;
+        PC <= 8'd1;
     end
     else begin
         // when C2 is open, it must be fetch stage

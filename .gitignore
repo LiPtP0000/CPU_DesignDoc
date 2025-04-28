@@ -303,4 +303,4 @@ TSWLatexianTemp*
 # # OS generated
 # .DS_Store
 # Thumbs.db
-# *.vcd
+*.vcd

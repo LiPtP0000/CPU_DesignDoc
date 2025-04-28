@@ -1,0 +1,96 @@
+[*]
+[*] GTKWave Analyzer v3.3.116 (w)1999-2023 BSI
+[*] Mon Apr 28 13:55:00 2025
+[*]
+[dumpfile] "/home/liptp/CPU_Design/CPU_DesignDoc/designs/sim/cpu_0428.vcd"
+[dumpfile_mtime] "Mon Apr 28 13:41:21 2025"
+[dumpfile_size] 12649411
+[savefile] "/home/liptp/CPU_Design/CPU_DesignDoc/designs/sim/sim_cpu_top.gtkw"
+[timestart] 2492156000
+[size] 1600 894
+[pos] -1 -1
+*-17.796385 2492685000 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1
+[treeopen] tb_CPU.
+[treeopen] tb_CPU.uut_cpu.
+[treeopen] tb_CPU.uut_cpu.control_unit.
+[treeopen] tb_CPU.uut_cpu.instruction_rom.
+[treeopen] tb_CPU.uut_cpu.internal_registers.
+[sst_width] 276
+[signals_width] 318
+[sst_expanded] 1
+[sst_vpaned_height] 499
+@200
+-Global Settings
+@28
+[color] 2
+tb_CPU.uut_cpu.control_unit.control_CAR.ctrl_cpu_start
+[color] 2
+tb_CPU.uut_cpu.control_unit.control_CAR.ctrl_step_execution
+[color] 2
+tb_CPU.uut_cpu.control_unit.control_CAR.i_next_instr_stimulus
+tb_CPU.uut_cpu.control_unit.control_CAR.i_clk
+tb_CPU.uut_cpu.control_unit.control_CAR.i_rst_n
+tb_CPU.uut_cpu.control_unit.control_CAR.indirect_done
+tb_CPU.uut_cpu.control_unit.control_CAR.indirect_flag
+@22
+tb_CPU.uut_cpu.control_unit.control_CAR.CAR[6:0]
+@28
+tb_CPU.uut_cpu.control_unit.control_CBR.next_addr[1:0]
+@22
+tb_CPU.uut_cpu.internal_registers.reg_PC.PC[7:0]
+tb_CPU.uut_cpu.internal_registers.reg_MAR.MAR[7:0]
+tb_CPU.uut_cpu.internal_registers.reg_IR.IR_opcode[7:0]
+@24
+tb_CPU.uut_cpu.internal_registers.reg_IR.IR_operand[7:0]
+@22
+tb_CPU.uut_cpu.internal_registers.reg_ACC.ACC[15:0]
+tb_CPU.uut_cpu.internal_registers.reg_MBR.MBR[15:0]
+tb_CPU.uut_cpu.internal_registers.reg_ALU.ALU_P[15:0]
+tb_CPU.uut_cpu.internal_registers.reg_ALU.ALU_Q[15:0]
+@200
+-Flags
+@28
+[color] 3
+tb_CPU.uut_cpu.internal_registers.reg_ALU.CF
+[color] 3
+tb_CPU.uut_cpu.internal_registers.reg_ALU.MF
+[color] 3
+tb_CPU.uut_cpu.internal_registers.reg_ALU.NF
+[color] 3
+tb_CPU.uut_cpu.internal_registers.reg_ALU.OF
+[color] 3
+tb_CPU.uut_cpu.internal_registers.reg_ALU.ZF
+@200
+-Control Signals (Execution Sequence)
+@28
+tb_CPU.uut_cpu.control_unit.control_CBR.C2
+tb_CPU.uut_cpu.control_unit.control_CBR.C0
+tb_CPU.uut_cpu.control_unit.control_CBR.C5
+tb_CPU.uut_cpu.control_unit.control_CBR.C4
+tb_CPU.uut_cpu.control_unit.control_CBR.C14
+tb_CPU.uut_cpu.control_unit.control_CBR.C15
+tb_CPU.uut_cpu.control_unit.control_CBR.C11
+tb_CPU.uut_cpu.control_unit.control_CBR.C8
+tb_CPU.uut_cpu.control_unit.control_CBR.C1
+tb_CPU.uut_cpu.control_unit.control_CBR.C3
+tb_CPU.uut_cpu.control_unit.control_CBR.C6
+tb_CPU.uut_cpu.control_unit.control_CBR.C7
+tb_CPU.uut_cpu.control_unit.control_CBR.C9
+tb_CPU.uut_cpu.control_unit.control_CBR.C10
+tb_CPU.uut_cpu.control_unit.control_CBR.C12
+tb_CPU.uut_cpu.control_unit.control_CBR.C13
+tb_CPU.uut_cpu.control_unit.control_CBR.ctrl_mar_increment
+tb_CPU.uut_cpu.control_unit.control_CBR.ctrl_global_halt
+@200
+-External Bus
+@22
+tb_CPU.uut_cpu.instruction_rom.instr_load_bram.i_addr_read[7:0]
+tb_CPU.uut_cpu.instruction_rom.instr_load_bram.o_instr_read[15:0]
+tb_CPU.uut_cpu.external_bus.o_data_bus_mbr[15:0]
+@28
+tb_CPU.uut_cpu.external_bus.memory_read_en
+@22
+tb_CPU.uut_cpu.external_bus.ADDRESS_BUS[7:0]
+tb_CPU.uut_cpu.external_bus.DATA_BUS[15:0]
+[pattern_trace] 1
+[pattern_trace] 0

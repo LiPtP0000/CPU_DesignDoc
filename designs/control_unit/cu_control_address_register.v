@@ -21,7 +21,7 @@ module CAR (
            i_ctrl_MF,
            o_car_data
        );
-input wire ctrl_cpu_start;         
+input wire ctrl_cpu_start;
 input wire ctrl_step_execution;
 input wire i_clk;
 input wire i_rst_n;
@@ -35,24 +35,25 @@ input wire i_ctrl_halt;  // C23
 output wire [6:0] o_car_data;
 
 // Indicator of indirect cycle requirement
-wire indirect_flag = i_ir_data[4];
+// 1 = Immediate
+
+wire indirect_flag = !i_ir_data[4] && (i_ir_data[3:0]!= 4'b0);
 
 // Indicator of indirect cycle done, default 0.
 reg indirect_done;
 
-wire [3:0] ir_data = i_ir_data[3:0];
-
+reg [3:0] ir_data;
 reg [6:0] CAR;  // Control Address Register
 
 always @(posedge i_clk or negedge i_rst_n) begin
     if (!i_rst_n) begin
-        CAR <= 7'h00;
+        CAR <= 7'b0;
         indirect_done <= 1'b0;
     end
     else begin
         // indirect at previlige
         if (indirect_flag && !indirect_done) begin
-            CAR <= 7'h02;
+            CAR <= 7'h05;
             indirect_done <= 1'b1;
         end
         else begin
@@ -131,6 +132,12 @@ always @(posedge i_clk or negedge i_rst_n) begin
     end
 end
 
-assign o_car_data = ctrl_start_cpu ? CAR : 7'b0;
+always @(*) begin
+    if(i_ir_data != 4'b0) begin
+        ir_data = i_ir_data[3:0];
+    end
+end
+
+assign o_car_data = ctrl_cpu_start ? CAR : 7'b0;
 
 endmodule

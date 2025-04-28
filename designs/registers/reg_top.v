@@ -1,13 +1,14 @@
 /*
 module REG_TOP
 Author: LiPtP
-
+ 
 Should be connected with:
 1. External Bus
 2. Control Unit
 and they should be at the same hierarchy level.
 */
 module REG_TOP(
+           ctrl_cpu_start,
            i_clk,
            i_rst_n,
            i_memory_data,
@@ -15,6 +16,10 @@ module REG_TOP(
            o_memory_data,
            o_ir_cu,
            o_flags,
+           o_alu_P,
+           o_alu_Q,
+           o_alu_result_low,
+           o_alu_result_high,
            i_alu_op,
            i_ctrl_halt,
            i_ctrl_mar_increment,
@@ -35,7 +40,7 @@ module REG_TOP(
            C14,
            C15
        );
-
+input ctrl_cpu_start;
 input i_clk;
 input i_rst_n;
 // From External Bus
@@ -56,6 +61,11 @@ output o_memory_en;
 output [7:0] o_ir_cu;
 output [4:0] o_flags;
 
+// To User Interface
+output [15:0] o_alu_P;
+output [15:0] o_alu_Q;
+output [15:0] o_alu_result_low;
+output [15:0] o_alu_result_high;
 // Internal signals (16 Data Path)
 
 wire [7:0] MAR_ADDR_BUS;    // C0
@@ -84,17 +94,21 @@ ACC reg_ACC(
         .i_mr_acc(MR_ACC),
         .i_mbr_acc(MBR_ACC),
         .C7(C7),
+        .C9(C9),
+        .C10(C10),
+        .C11(C11),
         .C12(C12),
         .o_acc_alu_p(ACC_ALU_P),
         .o_acc_mbr(ACC_MBR)
     );
 
+// The first command in CM is open C2
 PC reg_PC(
        .i_clk(i_clk),
        .i_rst_n(i_rst_n),
        .i_mbr_pc(MBR_PC),
        .C1(C1),
-       .C2(C2),
+       .C2(C2 & ctrl_cpu_start),
        .o_pc_mar(PC_MAR),
        .o_pc_mbr(PC_MBR)
    );
@@ -111,11 +125,15 @@ MBR reg_MBR(
         .o_mbr_mar(MBR_MAR),
         .o_mbr_acc(MBR_ACC),
         .o_mbr_alu_q(MBR_ALU_Q),
+        .C1(C1),
         .C3(C3),
         .C4(C4),
+        .C5(C5),
         .C6(C6),
         .C8(C8),
-        .C11(C11)
+        .C11(C11),
+        .C12(C12),
+        .C15(C15)
     );
 
 MAR reg_MAR(
@@ -157,4 +175,11 @@ assign DATA_BUS_MBR = i_memory_data;
 
 // Assignments to CU
 assign o_ir_cu = i_ctrl_halt ? 8'b0 : IR_CU;
+
+// Assignments to User interface
+// As they are existing for only one clock cycle, the signals should be stored at user interface.
+assign o_alu_result_low = BR_ACC;
+assign o_alu_P = ACC_ALU_P;
+assign o_alu_Q = MBR_ALU_Q;
+assign o_alu_result_high = MR_ACC;
 endmodule
