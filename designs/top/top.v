@@ -8,9 +8,8 @@ Should instantiate:
  
 This is the very top module of the CPU.
 * New ideas on 4.29 3.A.M
-1. instantiate a button to fetch specified Register Value.
-2. use switches to decide the displayed register. 
-3. When HALT, show ACC value and MR value (optional).
+1. When in STEP mode, instantiate a button to fetch specified Register Value. Use switches to decide the displayed register. 
+2. When in AUTO mode, show ACC value and MR value on HALT (optional).
 */
 module  TOP(
             // Should only declare signals from/to the board
@@ -19,9 +18,10 @@ module  TOP(
         );
 
 wire clk;
-wire rst_n;
+
 wire switch_step_execution;     // using a switch resource
 wire switch_start_cpu;
+wire button_rst_n;
 wire button_next_instr;
 
 wire light_instr_transmit_done;
@@ -38,7 +38,7 @@ wire [2:0] segment_operation;
 wire rx;
 TOP_CPU cpu (
             .i_clk(clk),
-            .i_rst_n(rst_n),
+            .i_rst_n(button_rst_n),
             .ctrl_step_execution(switch_step_execution),
             .i_rx(rx),
             .i_start_cpu(switch_start_cpu),
