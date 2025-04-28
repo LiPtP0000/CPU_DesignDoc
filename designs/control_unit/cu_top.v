@@ -5,8 +5,9 @@
 // * All internal registers via Internal Bus
 // * ALU
 // * External Bus
-
+// 4.28 Update: Add start_cpu signal to control the CPU execution
 module CU_TOP (
+            ctrl_cpu_start,
            ctrl_step_execution,
            i_next_instr_stimulus,
            i_clk,
@@ -36,6 +37,7 @@ module CU_TOP (
        );
 
 // External signals
+input ctrl_cpu_start; 
 input ctrl_step_execution;
 input i_next_instr_stimulus;
 input i_clk;
@@ -57,6 +59,7 @@ wire [23:0] control_word;
 
 
 CAR control_CAR (
+        .ctrl_cpu_start(ctrl_cpu_start),
         .ctrl_step_execution(ctrl_step_execution),
         .i_next_instr_stimulus(i_next_instr_stimulus),
         .i_clk(i_clk),

@@ -72,5 +72,6 @@ module INSTR_ROM (
       .o_max_addr(o_max_addr)
   );
 
+  // when
   assign o_instr_transmit_done = clear_uart & clear_fifo;
 endmodule

@@ -7,7 +7,7 @@ Should instantiate:
 2. Control Unit
 3. Internal Registers
 4. Memories
-and they should be at the same hierarchy level as they explains the whole CPU. 
+and they should be placed at the same hierarchy level as they explains the whole CPU. 
  
 The user interface should acknowledge part of CPU status and provide input to CPU, so it should be at the same level as this module.
  
@@ -16,10 +16,17 @@ module TOP_CPU(
            i_clk,
            i_rst_n,
            ctrl_step_execution,
-           i_next_instr_stimulus,
            i_rx,
+           i_start_cpu,
+           i_next_instr_stimulus,
            o_instr_transmit_done,
-           o_max_addr
+           o_max_addr,
+           o_halt,
+           o_alu_result,
+           o_alu_op,
+           o_alu_P,
+           o_alu_Q,
+           o_flags
        );
 
 input i_clk;
@@ -29,8 +36,18 @@ input i_rst_n;
 input ctrl_step_execution;
 input i_next_instr_stimulus;
 input i_rx;
+input i_start_cpu; // start CPU execution
 output o_instr_transmit_done;
 output [7:0] o_max_addr;
+output o_halt; // CPU halt signal
+output [2:0] o_alu_op; // ALU operation code
+output [4:0] o_flags; // ALU flags
+
+// not implemented on REG_TOP module
+
+output [15:0] o_alu_P; // ALU P register
+output [15:0] o_alu_Q; // ALU Q register
+output [15:0] o_alu_result; // ALU result
 
 // external bus
 wire [15:0] MBR_DATA_BUS;
@@ -126,6 +143,7 @@ REG_TOP internal_registers(
         );
         
 CU_TOP control_unit(
+           .ctrl_cpu_start(i_start_cpu),
            .ctrl_step_execution(ctrl_step_execution),
            .i_next_instr_stimulus(i_next_instr_stimulus),
            .i_clk(i_clk),
@@ -153,4 +171,11 @@ CU_TOP control_unit(
            .C14(C14),
            .C15(C15)
        );
+
+// Assignments
+
+assign o_halt = halt;
+assign o_flags = flags;
+assign o_alu_op = alu_op[2:0];      // The highest bit is enable signal
+
 endmodule
