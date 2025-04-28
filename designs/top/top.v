@@ -62,5 +62,8 @@ TOP_CPU cpu (
 
 // Signals prefixed "button" should be instantiated here
 
+// ============================ Assignments ==================================
+
+// UART input should be connected here.
 
 endmodule
