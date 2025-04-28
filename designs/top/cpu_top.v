@@ -10,7 +10,7 @@ Should instantiate:
 and they should be placed at the same hierarchy level as they explains the whole CPU. 
  
 The user interface should acknowledge part of CPU status and provide input to CPU, so it should be at the same level as this module.
- 
+
 */
 module TOP_CPU(
            i_clk,

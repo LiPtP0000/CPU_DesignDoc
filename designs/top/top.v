@@ -7,6 +7,10 @@ Should instantiate:
 2. User Interface
  
 This is the very top module of the CPU.
+* New ideas on 4.29 3.A.M
+1. instantiate a button to fetch specified Register Value.
+2. use switches to decide the displayed register. 
+3. When HALT, show ACC value and MR value (optional).
 */
 module  TOP(
             // Should only declare signals from/to the board
