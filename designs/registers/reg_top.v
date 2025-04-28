@@ -109,6 +109,7 @@ PC reg_PC(
        .i_mbr_pc(MBR_PC),
        .C1(C1),
        .C2(C2 & ctrl_cpu_start),
+       .C3(C3),
        .o_pc_mar(PC_MAR),
        .o_pc_mbr(PC_MBR)
    );
@@ -142,7 +143,9 @@ MAR reg_MAR(
         .i_mbr_mar(MBR_MAR),
         .i_pc_mar(PC_MAR),
         .ctrl_mar_increment(i_ctrl_mar_increment),
-        .o_mar_address_bus(MAR_ADDR_BUS)
+        .o_mar_address_bus(MAR_ADDR_BUS),
+        .C2(C2),
+        .C8(C8)
     );
 ALU reg_ALU(
         .i_clk(i_clk),
@@ -161,6 +164,7 @@ IR reg_IR(
        .i_clk(i_clk),
        .i_rst_n(i_rst_n),
        .i_mbr_ir(MBR_IR),
+       .C4(C4),
        .C14(C14),
        .C15(C15),
        .o_ir_cu(IR_CU),

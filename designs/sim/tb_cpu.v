@@ -30,36 +30,59 @@ initial begin
     i_rx = 1; // idle state high
     cpu_start = 0;
     #(bit_period);
-
+    // Addr 1: LOAD IMMEDIATE 0
     uart_send_byte(8'b01000001);
     uart_send_byte(8'b00000000);
+    // STORE IMMEDIATE 1
+    uart_send_byte(8'b10000001);
     uart_send_byte(8'b10000000);
-    uart_send_byte(8'b10000000);
+    // LOAD IMMEDIATE 1
     uart_send_byte(8'b01000001);
     uart_send_byte(8'b10000000);
-    uart_send_byte(8'b10000000);
+    // STORE IMMEDIATE 2
+    uart_send_byte(8'b10000001);
     uart_send_byte(8'b01000000);
+    // LOAD 1
     uart_send_byte(8'b01000000);
     uart_send_byte(8'b10000000);
+    // ADD 2
     uart_send_byte(8'b11000000);
     uart_send_byte(8'b01000000);
+    // STORE IMMEDIATE 1
+    uart_send_byte(8'b10000001);
     uart_send_byte(8'b10000000);
-    uart_send_byte(8'b10000000);
+    // LOAD 2
     uart_send_byte(8'b01000000);
     uart_send_byte(8'b01000000);
+    // ADD IMMEDIATE 1
     uart_send_byte(8'b11000001);
     uart_send_byte(8'b10000000);
-    uart_send_byte(8'b10000000);
+    // STORE IMMDEDIATE 2
+    uart_send_byte(8'b10000001);
     uart_send_byte(8'b01000000);
+    // SUB IMMEDIATE 100
     uart_send_byte(8'b00100001);
     uart_send_byte(8'b00100110);
+    // STORE 3
+    uart_send_byte(8'b10000001);
+    uart_send_byte(8'b11000000);
+    // JGZ 5
+    uart_send_byte(8'b10100001);
     uart_send_byte(8'b10100000);
-    uart_send_byte(8'b00100000);
+    // LOAD IMMEDIATE 1
+    uart_send_byte(8'b01000000);
+    uart_send_byte(8'b10000000);
+    // HALT
     uart_send_byte(8'b11100000);
     uart_send_byte(8'b00000000);
 
     #1000 cpu_start = 1;
-    #30000 $finish;
+end
+
+initial begin
+    wait(halt == 1);
+    #1000;
+    $finish;
 end
 
 

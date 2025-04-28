@@ -12,6 +12,7 @@ module PC (
            i_mbr_pc,
            C1,
            C2,
+           C3,
            o_pc_mar,
            o_pc_mbr
        );
@@ -20,6 +21,7 @@ input i_rst_n;
 input [7:0] i_mbr_pc;
 input C1;
 input C2;
+input C3;
 output [7:0] o_pc_mar;
 output [7:0] o_pc_mbr;
 
@@ -35,7 +37,7 @@ always @(posedge i_clk or negedge i_rst_n) begin
             PC <= PC + 1;
         end
         else begin
-            PC <= (i_mbr_pc != 8'b0) ? i_mbr_pc : PC;
+            PC <= C3 ? i_mbr_pc : PC;
         end
     end
 end

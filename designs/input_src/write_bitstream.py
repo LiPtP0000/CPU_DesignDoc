@@ -24,7 +24,7 @@ def parse_assembly(lines):
     pending = []
 
     # First pass: find labels
-    addr = 0
+    addr = 1
     for line in lines:
         line = line.split(';')[0].strip()  # clear comments
         if not line:
@@ -38,7 +38,7 @@ def parse_assembly(lines):
             addr += 1
 
     # Second pass: generate code
-    addr = 0
+    addr = 1
     for line in lines:
         line = line.split(';')[0].strip()
         if not line:
@@ -56,7 +56,7 @@ def parse_assembly(lines):
         instr = tokens[0]
         immediate = False
 
-        if instr in ["HALT","SHIFTR","SHIFTL"] : # No operand, fill with 0
+        if instr in ["HALT"] : # No operand, fill with 0
             opcode = MEMONICS[instr]
             operand = 0x00
         else:
@@ -130,15 +130,19 @@ def main():
     machine_words = parse_assembly(lines)
     binary = assemble_to_bytes(machine_words)
 
-    # 打印每条机器码（16位）和最终二进制流
+    # For Reference:
     print("Machine Code:")
     for i, word in enumerate(machine_words):
-        print(f"{i:02}: {word:04X}")
+        print(f"{i+1:02}: {word:04X}")
 
-    print("\nGenerated Binary Bitstream:")
-    print(" ".join(f"{b:08b}" for b in binary))
-    bitstream = [f"{b:08b}" for b in binary]
-    
-    send_to_serial(bitstream)
+    # For Simulation Testbench input drive:
+    print("\nGenerated UART Send Bitstream:")
+    for b in binary:
+        bits = f"{b:08b}"          
+        reversed_bits = bits[::-1]   
+        print(f"uart_send_byte(8'b{reversed_bits});")
+
+    # For FPGA Verification:
+    # send_to_serial(bits)
 
 main()

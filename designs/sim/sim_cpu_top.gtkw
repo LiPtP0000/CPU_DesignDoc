@@ -1,22 +1,22 @@
 [*]
 [*] GTKWave Analyzer v3.3.116 (w)1999-2023 BSI
-[*] Mon Apr 28 13:55:00 2025
+[*] Mon Apr 28 17:46:27 2025
 [*]
 [dumpfile] "/home/liptp/CPU_Design/CPU_DesignDoc/designs/sim/cpu_0428.vcd"
-[dumpfile_mtime] "Mon Apr 28 13:41:21 2025"
-[dumpfile_size] 12649411
+[dumpfile_mtime] "Mon Apr 28 17:45:47 2025"
+[dumpfile_size] 16834395
 [savefile] "/home/liptp/CPU_Design/CPU_DesignDoc/designs/sim/sim_cpu_top.gtkw"
-[timestart] 2492156000
+[timestart] 2938728000
 [size] 1600 894
 [pos] -1 -1
-*-17.796385 2492685000 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1
+*-20.296719 2943532000 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1
 [treeopen] tb_CPU.
 [treeopen] tb_CPU.uut_cpu.
 [treeopen] tb_CPU.uut_cpu.control_unit.
 [treeopen] tb_CPU.uut_cpu.instruction_rom.
 [treeopen] tb_CPU.uut_cpu.internal_registers.
 [sst_width] 276
-[signals_width] 318
+[signals_width] 403
 [sst_expanded] 1
 [sst_vpaned_height] 499
 @200
@@ -42,11 +42,16 @@ tb_CPU.uut_cpu.internal_registers.reg_MAR.MAR[7:0]
 tb_CPU.uut_cpu.internal_registers.reg_IR.IR_opcode[7:0]
 @24
 tb_CPU.uut_cpu.internal_registers.reg_IR.IR_operand[7:0]
-@22
+@420
 tb_CPU.uut_cpu.internal_registers.reg_ACC.ACC[15:0]
+@22
 tb_CPU.uut_cpu.internal_registers.reg_MBR.MBR[15:0]
+@420
 tb_CPU.uut_cpu.internal_registers.reg_ALU.ALU_P[15:0]
 tb_CPU.uut_cpu.internal_registers.reg_ALU.ALU_Q[15:0]
+tb_CPU.uut_cpu.internal_registers.reg_ALU.BR[15:0]
+@421
+tb_CPU.uut_cpu.internal_registers.reg_ALU.MR[15:0]
 @200
 -Flags
 @28
@@ -83,14 +88,34 @@ tb_CPU.uut_cpu.control_unit.control_CBR.ctrl_mar_increment
 tb_CPU.uut_cpu.control_unit.control_CBR.ctrl_global_halt
 @200
 -External Bus
+@28
+tb_CPU.uut_cpu.external_bus.memory_select
 @22
+tb_CPU.uut_cpu.external_bus.o_data_bus_memory[15:0]
 tb_CPU.uut_cpu.instruction_rom.instr_load_bram.i_addr_read[7:0]
 tb_CPU.uut_cpu.instruction_rom.instr_load_bram.o_instr_read[15:0]
 tb_CPU.uut_cpu.external_bus.o_data_bus_mbr[15:0]
 @28
-tb_CPU.uut_cpu.external_bus.memory_read_en
+tb_CPU.uut_cpu.external_bus.o_instr_rom_read
+tb_CPU.uut_cpu.external_bus.o_data_ram_read
+tb_CPU.uut_cpu.external_bus.o_data_ram_write
 @22
 tb_CPU.uut_cpu.external_bus.ADDRESS_BUS[7:0]
 tb_CPU.uut_cpu.external_bus.DATA_BUS[15:0]
+@200
+-Instruction Storage
+@22
+tb_CPU.uut_cpu.instruction_rom.i_addr_read[7:0]
+tb_CPU.uut_cpu.instruction_rom.o_instr_read[15:0]
+@200
+-Data Storage
+@28
+tb_CPU.uut_cpu.data_ram.ctrl_read
+tb_CPU.uut_cpu.data_ram.ctrl_write
+@22
+tb_CPU.uut_cpu.data_ram.i_addr_read[7:0]
+tb_CPU.uut_cpu.data_ram.i_addr_write[7:0]
+tb_CPU.uut_cpu.data_ram.i_data_write[15:0]
+tb_CPU.uut_cpu.data_ram.o_data_read[15:0]
 [pattern_trace] 1
 [pattern_trace] 0

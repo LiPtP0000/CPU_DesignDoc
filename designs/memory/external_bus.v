@@ -34,8 +34,8 @@ output [15:0] o_data_bus_mbr;
 
 // memory <-> bus
 
-input [15:0] i_instr; // Instruction
-input [15:0] i_data; // Data to be written to RAM
+input [15:0] i_instr; // Instruction from Instr ROM
+input [15:0] i_data; // Data from Data RAM
 output o_instr_rom_read;    
 output o_data_ram_read;     
 output o_data_ram_write;     

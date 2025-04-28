@@ -9,6 +9,7 @@ module IR (
            i_clk,
            i_rst_n,
            i_mbr_ir,
+           C4,
            C14,
            C15,
            o_ir_cu,
@@ -18,6 +19,7 @@ module IR (
 input i_clk;
 input i_rst_n;
 input [15:0] i_mbr_ir;
+input C4;
 input C14;
 input C15;
 output [7:0] o_ir_cu;
@@ -32,8 +34,8 @@ always @(posedge i_clk or negedge i_rst_n) begin
         IR_operand <= 8'b0;
     end
     else begin
-        IR_operand <= (i_mbr_ir[7:0] != 8'b0) ? i_mbr_ir[7:0] : IR_operand;
-        IR_opcode <= (i_mbr_ir[15:8] != 8'b0) ? i_mbr_ir[15:8] : IR_opcode;
+        IR_operand <= C4 ? i_mbr_ir[7:0] : IR_operand;
+        IR_opcode <= C4 ? i_mbr_ir[15:8] : IR_opcode;
     end
 end
 

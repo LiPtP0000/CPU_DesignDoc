@@ -37,29 +37,34 @@ output wire [6:0] o_car_data;
 // Indicator of indirect cycle requirement
 // 1 = Immediate
 
-wire indirect_flag = !i_ir_data[4] && (i_ir_data[3:0]!= 4'b0);
+
 
 // Indicator of indirect cycle done, default 0.
 reg indirect_done;
-
-reg [3:0] ir_data;
+wire indirect_flag = !ir_data[4] && (ir_data[3:0]!= 4'b0);
+reg [4:0] ir_data;
 reg [6:0] CAR;  // Control Address Register
 
+always @(*) begin
+    if(i_ir_data != 4'b0) begin
+        ir_data = i_ir_data[4:0];
+    end
+end
 always @(posedge i_clk or negedge i_rst_n) begin
     if (!i_rst_n) begin
         CAR <= 7'b0;
         indirect_done <= 1'b0;
     end
     else begin
-        // indirect at previlige
-        if (indirect_flag && !indirect_done) begin
-            CAR <= 7'h05;
-            indirect_done <= 1'b1;
-        end
-        else begin
-            case (i_control_word_car)
-                2'b01: begin  // Jump to execution
-                    case (ir_data)
+        case (i_control_word_car)
+            2'b01: begin  // Jump to execution or indirect
+                // indirect at previlige
+                if (indirect_flag && !indirect_done) begin
+                    CAR <= 7'h05;
+                    indirect_done <= 1'b1;
+                end
+                else begin
+                    case (ir_data[3:0])
                         4'd1: begin
                             if (i_ctrl_MF) begin
                                 CAR <= 7'h23;  // STORE & STOREH
@@ -76,7 +81,7 @@ always @(posedge i_clk or negedge i_rst_n) begin
                             CAR <= 7'h0D;  // SUB
 
                         4'd5: begin  // JGZ
-                            if (!i_ctrl_ZF && !i_ctrl_NF)
+                            if (i_ctrl_ZF || i_ctrl_NF)
                                 CAR <= 7'h11;
                             else
                                 CAR <= 7'h00;
@@ -101,42 +106,39 @@ always @(posedge i_clk or negedge i_rst_n) begin
                             CAR <= 7'h00;
                     endcase
                 end
-                2'b10: begin
-                    CAR <= CAR + 1;  // Next Micro-instruction
+            end
+            2'b10: begin
+                CAR <= CAR + 1;  // Next Micro-instruction
+            end
+            2'b11: begin
+                if (i_ctrl_halt) begin
+                    // Previliage HALT
+                    CAR <= CAR;
                 end
-                2'b11: begin
-                    if (i_ctrl_halt) begin
-                        // Previliage HALT
-                        CAR <= CAR;
-                    end
-                    else if (ctrl_step_execution) begin
-                        // Step-by-step instruction fetch
-                        if (i_next_instr_stimulus) begin
-                            CAR    <= 7'h00;
-                            indirect_done <= 1'b0;
-                        end
-                        else begin
-                            CAR <= CAR;
-                        end
+                else if (ctrl_step_execution) begin
+                    // Step-by-step instruction fetch
+                    if (i_next_instr_stimulus) begin
+                        CAR    <= 7'h00;
+                        indirect_done <= 1'b0;
                     end
                     else begin
-                        // Auto fetch
-                        CAR    <= 7'h00;  // Fetch next instruction
-                        indirect_done <= 1'b0;  // Reset Indirect Flag
+                        CAR <= CAR;
                     end
                 end
-                default:
-                    CAR <= CAR;  // Prevent latch
-            endcase
-        end
+                else begin
+                    // Auto fetch
+                    CAR    <= 7'h00;  // Fetch next instruction
+                    indirect_done <= 1'b0;  // Reset Indirect Flag
+                end
+            end
+            default:
+                CAR <= CAR;  // Prevent latch
+        endcase
     end
 end
 
-always @(*) begin
-    if(i_ir_data != 4'b0) begin
-        ir_data = i_ir_data[3:0];
-    end
-end
+
+
 
 assign o_car_data = ctrl_cpu_start ? CAR : 7'b0;
 
