@@ -747,11 +747,12 @@ CPU由\textbf{全局同步时钟}控制，时钟主频为50MHz。除复位信号
 
 CPU设有\textbf{全局异步复位}信号，低电平有效。当异步复位时，内存中除指令集数据以外所有数据清空，所有寄存器清空，控制信号全部归为断开（0）。
 
-当CPU执行07号指令HALT时，CPU处于\textbf{暂停}状态。与复位不同的是，此时所有寄存器不清空，但所有通路断开。在模块中使用\texttt{enable}信号标识（低电平有效）。恢复程序运行的方法是全局复位或继续运行信号（绑定FPGA的按键）。当该按键被按下时，\texttt{enable}信号恢复为1。
+当CPU执行07号指令HALT时，CPU处于\textbf{停止}状态。与复位不同的是，此时所有寄存器不清空，但所有通路断开。在模块中使用\texttt{enable}信号标识。解除该状态的唯一方法是全局复位。当该按键被按下时，\texttt{enable}信号恢复为1。
 
 \subsection{UART传输与指令内存}
 指令写入通过Python脚本（附录~\ref{sec:appendices:python}~）完成，其可以根据用户输出一串UART格式的比特流。用户可通过PC上的串口调试设备连接UART端口进行传输。
-
+\paragraph{模块代码：}
+见附录~\ref{sec:appendices:uart}。
 \paragraph{功能块基本信息：}
 \begin{itemize}
   \item 模块名：\texttt{INSTR\_ROM}
@@ -774,12 +775,11 @@ CPU设有\textbf{全局异步复位}信号，低电平有效。当异步复位�
   \endhead
   
   \texttt{i\_clk\_uart} & 输入 & 1 & 时钟信号（100MHz） \\
-  % \texttt{i\_clk} & 输入 & 1 & 系统时钟信号（50MHz） \\
   \texttt{i\_rst\_n} & 输入 & 1 & 全局复位信号 \\
   \texttt{i\_rx} & 输入 & 1 & 绑定至UART接收引脚 \\
   \texttt{i\_addr\_read} & 输入 & 8 & 读RAM地址 \\
   \texttt{o\_instr\_read} & 输出 & 16 & 指令输出信号 \\
-  \texttt{o\_instr\_transmit\_done} & 输出 & 1 & （安全的）指令完成传入标志 \\
+  \texttt{o\_instr\_transmit\_done} & 输出 & 1 & 指令完成传入标志 \\
   \texttt{o\_max\_addr} & 输出 & 8 & 最大地址输出 \\
   \bottomrule
 \end{longtable}
@@ -793,7 +793,7 @@ CPU设有\textbf{全局异步复位}信号，低电平有效。当异步复位�
   \item 是否经过测试：是
 \end{itemize}
 \paragraph{模块功能：}
-将用户输入代码比特流（8N1格式）译码为1字节数据。
+将用户输入代码比特流（8N1格式）译码为1字节数据。分频时钟代码见\hyperref{sec:appendices:uart}{clk\_divider.v}。
 \paragraph{模块外部接口：}
 
 \begin{longtable}{>{\bfseries}c c c c}
@@ -845,7 +845,7 @@ CPU设有\textbf{全局异步复位}信号，低电平有效。当异步复位�
   \texttt{i\_clk\_wr}        & 输入  & 1        & 写时钟信号，UART 使用的 100MHz 时钟 \\
   \texttt{i\_valid\_uart}    & 输入  & 1        & 表示当前 UART 输入数据有效 \\
   \texttt{i\_data\_uart}     & 输入  & 8        & UART 接收到的 8 位数据字节 \\
-  \texttt{i\_clk\_rd}        & 输入  & 1        & 读时钟信号，主系统使用的 50MHz 时钟 \\
+  \texttt{i\_clk\_rd}        & 输入  & 1        & 读时钟信号，使用100MHz 时钟 \\
   \texttt{o\_data\_bram}     & 输出  & 16       & 两个 UART 字节拼接后的数据，写入 BRAM \\
   \texttt{o\_addr\_bram}     & 输出  & 8        & BRAM 写入地址，从 0 开始自增 \\
   \texttt{o\_wr\_en\_bram}   & 输出  & 1        & BRAM 写使能，高电平表示写入有效 \\
@@ -860,11 +860,11 @@ CPU设有\textbf{全局异步复位}信号，低电平有效。当异步复位�
 \paragraph{模块基本信息：}
 \begin{itemize}
   \item 模块名：\texttt{BRAM\_INSTR}
-  \item 最新更新日期：\texttt{4.13}
-  \item 是否经过测试：是
+  \item 最新更新日期：\texttt{4.28}
+  \item 是否经过测试：否
 \end{itemize}
 \paragraph{模块功能：}
-描述一指令块RAM，可存放256条2byte指令。读写双口，拥有写使能（FIFO传入）。外部设备可通过地址读取对应地址的2byte指令。\textbf{该模块使用50MHz时钟}，以避免时钟差距太大导致的传输错误。
+描述一指令块RAM，可存放256条2byte指令。读写双口，拥有写使能（FIFO传入）。外部设备可通过开读使能信号并传入地址读取对应地址的2byte指令。
 \paragraph{模块外部接口：}
 \begin{longtable}{>{\bfseries}c c c c}
   \caption{指令BRAM模块外部接口} \\
@@ -881,6 +881,7 @@ CPU设有\textbf{全局异步复位}信号，低电平有效。当异步复位�
 
   \texttt{i\_clk}          & 输入  & 1        & 系统时钟信号，驱动读写操作 \\
   \texttt{en\_write}       & 输入  & 1        & 写使能信号，高电平时允许将指令写入 BRAM \\
+  \texttt{en\_read}        & 输入  & 1        & 读使能信号，高电平时允许外部总线从 BRAM 中读取指令 \\
   \texttt{i\_addr\_write}  & 输入  & 8        & 要写入的指令地址 \\
   \texttt{i\_instr\_write} & 输入  & 16       & 要写入的指令内容 \\
   \texttt{i\_addr\_read}   & 输入  & 8        & 要读取的指令地址 \\
@@ -967,8 +968,7 @@ ALU运算结果存放于MR寄存器和ACC寄存器中。其中MR寄存器存放�
 \subsubsection{PC}
 \subsubsection{IR}
 \subsubsection{ACC}
-\subsection{内存设计}
-\subsubsection{数据RAM}
+\subsection{数据内存设计}
 \subsection{外部总线设计}
 
 
