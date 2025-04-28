@@ -14,7 +14,7 @@ The user interface should acknowledge part of CPU status and provide input to CP
 */
 module TOP_CPU(
            i_clk,
-           i_rst_n
+           i_rst_n,
            ctrl_step_execution,
            i_next_instr_stimulus,
            i_rx,
@@ -124,6 +124,7 @@ REG_TOP internal_registers(
             .C14(C14),
             .C15(C15)
         );
+        
 CU_TOP control_unit(
            .ctrl_step_execution(ctrl_step_execution),
            .i_next_instr_stimulus(i_next_instr_stimulus),
