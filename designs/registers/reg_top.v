@@ -9,6 +9,11 @@ and they should be at the same hierarchy level.
 */
 module REG_TOP(
            ctrl_cpu_start,
+           i_user_sample,
+           o_ACC_user,
+           o_MR_user,
+           o_PC_user,
+           o_IR_user,
            i_clk,
            i_rst_n,
            i_memory_data,
@@ -16,10 +21,6 @@ module REG_TOP(
            o_memory_data,
            o_ir_cu,
            o_flags,
-           o_alu_P,
-           o_alu_Q,
-           o_alu_result_low,
-           o_alu_result_high,
            i_alu_op,
            i_ctrl_halt,
            i_ctrl_mar_increment,
@@ -40,7 +41,9 @@ module REG_TOP(
            C14,
            C15
        );
+
 input ctrl_cpu_start;
+input i_user_sample;
 input i_clk;
 input i_rst_n;
 // From External Bus
@@ -62,10 +65,11 @@ output [7:0] o_ir_cu;
 output [4:0] o_flags;
 
 // To User Interface
-output [15:0] o_alu_P;
-output [15:0] o_alu_Q;
-output [15:0] o_alu_result_low;
-output [15:0] o_alu_result_high;
+output [15:0] o_ACC_user;
+output [15:0] o_MR_user;
+output [7:0] o_PC_user;
+output [7:0] o_IR_user;
+
 // Internal signals (16 Data Path)
 
 wire [7:0] MAR_ADDR_BUS;    // C0
@@ -99,7 +103,9 @@ ACC reg_ACC(
         .C11(C11),
         .C12(C12),
         .o_acc_alu_p(ACC_ALU_P),
-        .o_acc_mbr(ACC_MBR)
+        .o_acc_mbr(ACC_MBR),
+        .i_user_sample(i_user_sample),
+        .o_acc_user(o_ACC_user)
     );
 
 // The first command in CM is open C2
@@ -111,7 +117,9 @@ PC reg_PC(
        .C2(C2 & ctrl_cpu_start),
        .C3(C3),
        .o_pc_mar(PC_MAR),
-       .o_pc_mbr(PC_MBR)
+       .o_pc_mbr(PC_MBR),
+       .i_user_sample(i_user_sample),
+       .o_pc_user(o_PC_user)
    );
 MBR reg_MBR(
         .i_clk(i_clk),
@@ -158,7 +166,9 @@ ALU reg_ALU(
         .C10(C10),
         .o_mr(MR_ACC),
         .o_br(BR_ACC),
-        .o_flags(o_flags)
+        .o_flags(o_flags),
+        .i_user_sample(i_user_sample),
+        .o_mr_user(o_MR_user)
     );
 IR reg_IR(
        .i_clk(i_clk),
@@ -168,7 +178,9 @@ IR reg_IR(
        .C14(C14),
        .C15(C15),
        .o_ir_cu(IR_CU),
-       .o_ir_mbr(IR_MBR)
+       .o_ir_mbr(IR_MBR),
+       .i_user_sample(i_user_sample),
+       .o_ir_user(o_IR_user)
    );
 
 // Assignments to external bus
@@ -182,8 +194,5 @@ assign o_ir_cu = i_ctrl_halt ? 8'b0 : IR_CU;
 
 // Assignments to User interface
 // As they are existing for only one clock cycle, the signals should be stored at user interface.
-assign o_alu_result_low = BR_ACC;
-assign o_alu_P = ACC_ALU_P;
-assign o_alu_Q = MBR_ALU_Q;
-assign o_alu_result_high = MR_ACC;
+
 endmodule

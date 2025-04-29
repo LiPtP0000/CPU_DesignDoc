@@ -1,12 +1,31 @@
-
+`timescale 1ns/1ps
 module tb_CPU;
-    
-// UART transmit
 
-// bit period at 115200 baud
+// Parameters
 parameter bit_period = 8680; // 8.68us, if timescale is 1ns
+
+// Registers
 reg i_rx;
 reg cpu_start;
+reg next_instr;
+reg user_sample;
+reg clk;
+reg rst_n;
+
+// Wires
+wire instr_transmit_done;
+wire [7:0] max_addr_instr;
+wire halt;
+wire [15:0] alu_result;
+wire [15:0] alu_result_high;
+wire [2:0] alu_op;
+wire [15:0] alu_P;
+wire [15:0] alu_Q;
+wire [4:0] flags;
+wire [7:0] current_opcode;
+wire [7:0] current_pc;
+
+// Task: UART send byte
 task uart_send_byte(input [7:0] data);
     integer i;
     begin
@@ -26,9 +45,29 @@ task uart_send_byte(input [7:0] data);
     end
 endtask
 
+// Clock generation
+initial begin
+    clk = 0;
+    forever
+        #5 clk = !clk;
+end
+
+// Asynchronous reset
+initial begin
+    rst_n = 1;
+    #100 rst_n = 0;
+    #5 rst_n = 1;
+end
+
+// DumpFile
+initial begin
+    $dumpfile("cpu_0428.vcd");
+    $dumpvars(0, tb_CPU);
+end
+
+// RXD Data
 initial begin
     i_rx = 1; // idle state high
-    cpu_start = 0;
     #(bit_period);
     // Addr 1: LOAD IMMEDIATE 0
     uart_send_byte(8'b01000001);
@@ -75,65 +114,78 @@ initial begin
     // HALT
     uart_send_byte(8'b11100000);
     uart_send_byte(8'b00000000);
-
-    #1000 cpu_start = 1;
 end
 
+
+// Task: Wait for CPU start
+task cpu_start;
+    begin
+        cpu_start = 0;
+        wait(instr_transmit_done);
+        #1000 cpu_start = 1;
+    end
+endtask
+
+// Task: Execute instructions
+task execute_instructions;
+    begin
+        user_sample = 0;
+        wait(cpu_start == 1);
+        #1000;
+        while (!halt) begin
+            next_instr = 1;
+            #10 next_instr = 0;
+            #10000;
+            #10 user_sample = 1;
+            #10 user_sample = 0;
+        end
+        $display("CPU halted at %t", $time);
+        $display("ALU result: %h", alu_result);
+        $display("ALU result high: %h", alu_result_high);
+    end
+endtask
+
+// Task: Reset and restart CPU
+task reset_and_restart_cpu;
+    begin
+        #1000 cpu_start = 0;
+        #1000 rst_n = 0;
+        #10 rst_n = 1;
+        #(bit_period);
+        uart_send_byte(8'b01000001);
+        uart_send_byte(8'b00000000);
+    end
+endtask
+
+// Main initial block
 initial begin
-    wait(halt == 1);
-    #1000;
-    $finish;
+    cpu_start();
+    execute_instructions();
+    reset_and_restart_cpu();
+    wait(instr_transmit_done);
+    #10000 $finish;
 end
 
 
-// clock generation
-reg clk;
-initial begin
-    clk = 0;
-    forever #5 clk = !clk;
-end
 
-// Asynchronus reset
-reg rst_n;
-initial begin
-    rst_n = 1;
-    #100 rst_n = 0;
-    #5 rst_n = 1;
-end
-
-
-// dump
-initial begin
-    $dumpfile("cpu_0428.vcd");
-    $dumpvars(0,tb_CPU);
-end
-
-// Instantiate
-wire instr_transmit_done;
-wire [7:0] max_addr_instr;
-wire halt;
-wire [15:0] alu_result;
-wire [15:0] alu_result_high;
-wire [2:0] alu_op;
-wire [15:0] alu_P;
-wire [15:0] alu_Q;
-wire [4:0] flags;
 
 TOP_CPU uut_cpu(
-           .i_clk(clk),
-           .i_rst_n(rst_n),
-           .ctrl_step_execution(1'b0),
-           .i_rx(i_rx),
-           .i_start_cpu(cpu_start),
-           .i_next_instr_stimulus(1'b0),
-           .o_instr_transmit_done(instr_transmit_done),
-           .o_max_addr(max_addr_instr),
-           .o_halt(halt),
-           .o_alu_result_low(alu_result),
-           .o_alu_result_high(alu_result_high),
-           .o_alu_op(alu_op),
-           .o_alu_P(alu_P),
-           .o_alu_Q(alu_Q),
-           .o_flags(flags)
-       );
+            .i_clk(clk),
+            .i_rst_n(rst_n),
+            .ctrl_step_execution(1'b1),
+            .i_user_sample(user_sample),
+            .i_rx(i_rx),
+            .i_start_cpu(cpu_start),
+            .i_next_instr_stimulus(next_instr),
+            .o_instr_transmit_done(instr_transmit_done),
+            .o_max_addr(max_addr_instr),
+            .o_halt(halt),
+            .o_alu_result_low(alu_result),
+            .o_alu_result_high(alu_result_high),
+            .o_alu_op(alu_op),
+            .o_flags(flags),
+            .o_current_Opcode(current_opcode),
+            .o_current_PC(current_pc)
+        );
+        
 endmodule

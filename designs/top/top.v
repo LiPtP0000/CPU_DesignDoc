@@ -14,10 +14,22 @@ This is the very top module of the CPU.
 module  TOP(
             // Should only declare signals from/to the board
             // and they are directly assigned to physical ports via constraint files.
-
+            CLK_100MHz,
+            RST_N,
+            STEP_EXECUTION,
+            START_CPU,
+            NEXT_INSTR_STIMULUS,
+            RXD
         );
 
-wire clk;
+input CLK_100MHz;
+input RST_N;
+input STEP_EXECUTION;
+input START_CPU;
+input NEXT_INSTR_STIMULUS;
+input RXD;
+
+wire clk = CLK_100MHz;
 
 wire switch_step_execution;     // using a switch resource
 wire switch_start_cpu;
@@ -35,7 +47,7 @@ wire [15:0] segment_result_low;
 wire [15:0] segment_result_high;
 wire [2:0] segment_operation;
 
-wire rx;
+wire rx = RXD;
 TOP_CPU cpu (
             .i_clk(clk),
             .i_rst_n(button_rst_n),
@@ -55,19 +67,40 @@ TOP_CPU cpu (
         );
 // =========================== User Interfaces ===============================
 
+// Signals prefixed "switch" should be instantiated here
+KEY_JITTER switch_start_cpu(
+                .i_clk(clk),
+                .key_in(START_CPU),
+                .key_out(switch_start_cpu)
+              );
+KEY_JITTER switch_step_execution(
+                .i_clk(clk),
+                .key_in(STEP_EXECUTION),
+                .key_out(switch_step_execution)
+              );
+
+// Signals prefixed "button" should be instantiated here
+KEY_JITTER button_reset(
+               .i_clk(clk),
+               .key_in(RST_N),
+               .key_out(button_rst_n)
+           );
+
+KEY_JITTER button_next_instr(
+               .i_clk(clk),
+               .key_in(NEXT_INSTR_STIMULUS),
+               .key_out(button_next_instr)
+           );
+
 // Signals prefixed "segment" should be instantiated here
 
 
 // Signals prefixed "light" should be instantiated here
 
 
-// Signals prefixed "switch" should be instantiated here
 
-
-// Signals prefixed "button" should be instantiated here
 
 // ============================ Assignments ==================================
 
-// UART input should be connected here.
 
 endmodule

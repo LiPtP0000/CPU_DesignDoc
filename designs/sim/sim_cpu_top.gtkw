@@ -1,15 +1,15 @@
 [*]
 [*] GTKWave Analyzer v3.3.116 (w)1999-2023 BSI
-[*] Mon Apr 28 17:46:27 2025
+[*] Tue Apr 29 17:59:20 2025
 [*]
 [dumpfile] "/home/liptp/CPU_Design/CPU_DesignDoc/designs/sim/cpu_0428.vcd"
-[dumpfile_mtime] "Mon Apr 28 17:45:47 2025"
-[dumpfile_size] 16834395
+[dumpfile_mtime] "Tue Apr 29 17:57:57 2025"
+[dumpfile_size] 100102222
 [savefile] "/home/liptp/CPU_Design/CPU_DesignDoc/designs/sim/sim_cpu_top.gtkw"
-[timestart] 2938728000
+[timestart] 0
 [size] 1600 894
-[pos] -1 -1
-*-20.296719 2943532000 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1
+[pos] 0 8
+*-32.037952 5790000000 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1
 [treeopen] tb_CPU.
 [treeopen] tb_CPU.uut_cpu.
 [treeopen] tb_CPU.uut_cpu.control_unit.
@@ -20,7 +20,7 @@
 [sst_expanded] 1
 [sst_vpaned_height] 499
 @200
--Global Settings
+-User Interface
 @28
 [color] 2
 tb_CPU.uut_cpu.control_unit.control_CAR.ctrl_cpu_start
@@ -28,16 +28,36 @@ tb_CPU.uut_cpu.control_unit.control_CAR.ctrl_cpu_start
 tb_CPU.uut_cpu.control_unit.control_CAR.ctrl_step_execution
 [color] 2
 tb_CPU.uut_cpu.control_unit.control_CAR.i_next_instr_stimulus
+[color] 2
+tb_CPU.uut_cpu.i_user_sample
+@22
+tb_CPU.current_opcode[7:0]
+tb_CPU.current_pc[7:0]
+tb_CPU.alu_result_high[15:0]
+tb_CPU.alu_result[15:0]
+@28
+tb_CPU.instr_transmit_done
+@22
+tb_CPU.max_addr_instr[7:0]
+@28
 tb_CPU.uut_cpu.control_unit.control_CAR.i_clk
 tb_CPU.uut_cpu.control_unit.control_CAR.i_rst_n
+[color] 3
+tb_CPU.uut_cpu.instruction_rom.instr_load_uart.i_rx
+tb_CPU.uut_cpu.instruction_rom.clear_uart
+tb_CPU.uut_cpu.instruction_rom.clear_fifo
+@200
+-CPU
+@28
 tb_CPU.uut_cpu.control_unit.control_CAR.indirect_done
 tb_CPU.uut_cpu.control_unit.control_CAR.indirect_flag
 @22
 tb_CPU.uut_cpu.control_unit.control_CAR.CAR[6:0]
 @28
 tb_CPU.uut_cpu.control_unit.control_CBR.next_addr[1:0]
-@22
+@24
 tb_CPU.uut_cpu.internal_registers.reg_PC.PC[7:0]
+@22
 tb_CPU.uut_cpu.internal_registers.reg_MAR.MAR[7:0]
 tb_CPU.uut_cpu.internal_registers.reg_IR.IR_opcode[7:0]
 @24
@@ -46,11 +66,10 @@ tb_CPU.uut_cpu.internal_registers.reg_IR.IR_operand[7:0]
 tb_CPU.uut_cpu.internal_registers.reg_ACC.ACC[15:0]
 @22
 tb_CPU.uut_cpu.internal_registers.reg_MBR.MBR[15:0]
-@420
 tb_CPU.uut_cpu.internal_registers.reg_ALU.ALU_P[15:0]
 tb_CPU.uut_cpu.internal_registers.reg_ALU.ALU_Q[15:0]
+@420
 tb_CPU.uut_cpu.internal_registers.reg_ALU.BR[15:0]
-@421
 tb_CPU.uut_cpu.internal_registers.reg_ALU.MR[15:0]
 @200
 -Flags

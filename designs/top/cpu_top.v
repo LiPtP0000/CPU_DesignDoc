@@ -10,12 +10,13 @@ Should instantiate:
 and they should be placed at the same hierarchy level as they explains the whole CPU. 
  
 The user interface should acknowledge part of CPU status and provide input to CPU, so it should be at the same level as this module.
-
+ 
 */
 module TOP_CPU(
            i_clk,
            i_rst_n,
            ctrl_step_execution,
+           i_user_sample,
            i_rx,
            i_start_cpu,
            i_next_instr_stimulus,
@@ -25,9 +26,9 @@ module TOP_CPU(
            o_alu_result_low,
            o_alu_result_high,
            o_alu_op,
-           o_alu_P,
-           o_alu_Q,
-           o_flags
+           o_flags,
+           o_current_Opcode,
+           o_current_PC
        );
 
 input i_clk;
@@ -36,6 +37,7 @@ input i_rst_n;
 // from/to user interface
 input ctrl_step_execution;
 input i_next_instr_stimulus;
+input i_user_sample;
 input i_rx;
 input i_start_cpu; // start CPU execution
 output o_instr_transmit_done;
@@ -44,10 +46,8 @@ output o_halt; // CPU halt signal
 output [2:0] o_alu_op; // ALU operation code
 output [4:0] o_flags; // ALU flags
 
-// not implemented on REG_TOP module
-
-output [15:0] o_alu_P; // ALU P register
-output [15:0] o_alu_Q; // ALU Q register
+output [7:0] o_current_Opcode;
+output [7:0] o_current_PC;
 output [15:0] o_alu_result_low;
 output [15:0] o_alu_result_high;
 
@@ -118,19 +118,19 @@ INSTR_ROM instruction_rom(
               .o_instr_transmit_done(o_instr_transmit_done),
               .o_max_addr(o_max_addr)
           );
-
 REG_TOP internal_registers(
             .ctrl_cpu_start(i_start_cpu),
+            .i_user_sample(i_user_sample),
+            .o_ACC_user(o_alu_result_low),
+            .o_MR_user(o_alu_result_high),
+            .o_PC_user(o_current_PC),
+            .o_IR_user(o_current_Opcode),
             .i_clk(i_clk),
             .i_rst_n(i_rst_n),
             .i_memory_data(DATA_BUS_MBR),
             .o_memory_addr(MAR_ADDR_BUS),
             .o_memory_data(MBR_DATA_BUS),
             .o_ir_cu(opcode),
-            .o_alu_P(ALU_P),
-            .o_alu_Q(ALU_Q),
-            .o_alu_result_low(ALU_RES_LOW),
-            .o_alu_result_high(ALU_RES_HIGH),
             .o_flags(flags),
             .i_alu_op(alu_op),
             .i_ctrl_halt(halt),
@@ -152,6 +152,7 @@ REG_TOP internal_registers(
             .C14(C14),
             .C15(C15)
         );
+
 
 CU_TOP control_unit(
            .ctrl_cpu_start(i_start_cpu),
@@ -188,8 +189,5 @@ CU_TOP control_unit(
 assign o_halt = halt;
 assign o_flags = flags;
 assign o_alu_op = alu_op[2:0];      // The highest bit is enable signal
-assign o_alu_P = ALU_P;
-assign o_alu_Q = ALU_Q;
-assign o_alu_result_low = ALU_RES_LOW;
-assign o_alu_result_high = ALU_RES_HIGH;
+
 endmodule
