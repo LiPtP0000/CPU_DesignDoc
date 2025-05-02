@@ -118,7 +118,7 @@ end
 
 
 // Task: Wait for CPU start
-task cpu_start;
+task cpu_start_task;
     begin
         cpu_start = 0;
         wait(instr_transmit_done);
@@ -159,7 +159,7 @@ endtask
 
 // Main initial block
 initial begin
-    cpu_start();
+    cpu_start_task();
     execute_instructions();
     reset_and_restart_cpu();
     wait(instr_transmit_done);
