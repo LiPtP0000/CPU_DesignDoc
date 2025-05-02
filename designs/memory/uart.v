@@ -15,8 +15,8 @@ output reg  [7:0] o_data;
 output reg        o_valid;        // on data is translated
 output wire       o_clear_sign;   // on no more data is received
 
-// 0.3ms with 100MHz Frequency => 0.5s / (10ns * MAX_WAITING_CLK)
-parameter MAX_WAITING_CLK = 30000;
+// 0.5s no new data
+parameter MAX_WAITING_CLK = 434;
 
 
 parameter IDLE  = 3'b000;
@@ -30,7 +30,7 @@ reg [4:0] bit_counter;            // At most 8bit data + start/stop
 reg [25:0] rx_no_data_counter;    // time-out counter
 reg [7:0] rx_shift_reg;           // data storage
 
-reg clear, clear_state;
+reg clear;
 
 // data storage update
 always @(posedge i_clk_uart or negedge i_rst_n) begin
@@ -92,27 +92,24 @@ always @(posedge i_clk_uart or negedge i_rst_n) begin
     end
 end
 
-// 空闲超时检测
+// Time-out detect
 always @(posedge i_clk_uart or negedge i_rst_n) begin
     if (!i_rst_n) begin
         clear <= 0;
-        clear_state <= 0;
         rx_no_data_counter <= 0;
     end
     else begin
         case (current_state)
             IDLE: begin
-                if (rx_no_data_counter >= MAX_WAITING_CLK) begin
+                if (rx_no_data_counter == MAX_WAITING_CLK) begin
                     rx_no_data_counter <= 0;
                     clear <= 1;
                 end
                 else begin
                     rx_no_data_counter <= rx_no_data_counter + 1;
-                    clear <= 0;
                 end
             end
             default: begin
-                clear_state <= 1;
                 clear <= 0;
                 rx_no_data_counter <= 0;
             end
@@ -120,6 +117,6 @@ always @(posedge i_clk_uart or negedge i_rst_n) begin
     end
 end
 
-assign o_clear_sign = clear & clear_state;
+assign o_clear_sign = clear;
 
 endmodule

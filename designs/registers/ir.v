@@ -13,7 +13,9 @@ module IR (
            C14,
            C15,
            o_ir_cu,
-           o_ir_mbr
+           o_ir_mbr,
+           i_user_sample,
+           o_ir_user
        );
 
 input i_clk;
@@ -22,8 +24,10 @@ input [15:0] i_mbr_ir;
 input C4;
 input C14;
 input C15;
+input i_user_sample;
 output [7:0] o_ir_cu;
 output [7:0] o_ir_mbr;
+output [7:0] o_ir_user;
 
 reg [7:0] IR_opcode;
 reg [7:0] IR_operand;
@@ -41,4 +45,5 @@ end
 
 assign o_ir_cu = C14 ? IR_opcode : 8'b0;
 assign o_ir_mbr = C15 ? IR_operand : 8'b0;
+assign o_ir_user = i_user_sample ? IR_opcode : 8'b0;
 endmodule

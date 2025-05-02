@@ -17,7 +17,9 @@ module ALU (
            C10,
            o_mr,
            o_br,
-           o_flags
+           o_flags,
+           i_user_sample,
+           o_mr_user
        );
 input i_clk;
 input i_rst_n;
@@ -30,6 +32,8 @@ input C10;
 output [15:0] o_mr;
 output [15:0] o_br;
 output [4:0] o_flags;
+input i_user_sample;
+output [15:0] o_mr_user;
 
 // Re-interpret input to signed values
 wire signed [15:0] ALU_P;
@@ -136,5 +140,5 @@ assign ALU_Q = i_acc_alu_q;
 assign o_br = C9 ? BR : 16'b0;
 assign o_mr = C10 ? MR : 16'b0;
 assign o_flags = {ZF, CF, OF, NF, MF};
-
+assign o_mr_user = i_user_sample ? MR : 16'b0;
 endmodule

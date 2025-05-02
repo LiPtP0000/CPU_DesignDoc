@@ -10,7 +10,9 @@ module ACC (
            C11,
            C12,
            o_acc_alu_p,
-           o_acc_mbr
+           o_acc_mbr,
+           i_user_sample,
+           o_acc_user
        );
 input i_clk;
 input i_rst_n;
@@ -22,9 +24,10 @@ input C9;
 input C10;
 input C11;
 input C12;
+input i_user_sample;
 output [15:0] o_acc_alu_p;
 output [15:0] o_acc_mbr;
-
+output [15:0] o_acc_user;
 reg [15:0] ACC;
 
 always @(posedge i_clk or negedge i_rst_n) begin
@@ -49,4 +52,5 @@ end
 
 assign o_acc_alu_p = C7 ? ACC : 16'b0;
 assign o_acc_mbr = C12 ? ACC : 16'b0;
+assign o_acc_user = i_user_sample ? ACC : 16'b0;
 endmodule
