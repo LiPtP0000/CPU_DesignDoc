@@ -29,9 +29,17 @@ output   [15:0] o_data_read;
 reg [15:0] mem [0:255];
 
 // Write Operation, no initialization of data RAM
-always @(posedge i_clk) begin
-    if (ctrl_write) begin
-        mem[i_addr_write] <= i_data_write;
+integer i;
+always @(posedge i_clk or negedge i_rst_n) begin
+    if (!i_rst_n) begin
+        for (i = 0; i < 256; i = i + 1) begin
+            mem[i] <= 16'b0;
+        end
+    end
+    else begin
+        if (ctrl_write) begin
+            mem[i_addr_write] <= i_data_write;
+        end
     end
 end
 
