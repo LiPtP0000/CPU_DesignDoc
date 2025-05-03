@@ -272,7 +272,7 @@ CPU由控制单元（CU），逻辑运算单元（ALU），内存（Memory）和
   CF  & Carry Flag     & 存储算术移位移出的比特（由于有符号数不存储进位）\\
   OF  & Overflow Flag &  非乘法运算下BR溢出时置1，乘法运算下MR溢出置1\\
   NF  & Negative Flag &  ALU运算结果为负数时置1\\
-  MF & Multiply Flag & ALU此轮运算为乘法并溢出时置1\\
+  MF & Multiply Flag & ALU此轮运算为乘法时置1\\
 \end{longtable}
 \subsection{算术逻辑单元ALU}
 算术逻辑单元ALU负责进行大部分CPU内的计算\footnote{自增与PC赋值在设计中不引入ALU。}。
@@ -435,7 +435,7 @@ ALU与外围寄存器的控制通路见第~\ref{sec:datapath}~节。ALU受到来
   HALT & 0111 &
   
   无操作 & 
-  暂停程序 \\
+  停止程序 \\
 
   
   \midrule
@@ -672,7 +672,8 @@ LOOP: LOAD 0             ; 读取当前累加值 → ACC=SUM
 \begin{itemize}
   \item 地址占1byte，Opcode占1byte；
   \item 含IMMEDIATE关键字的行，Opcode的MSB为1；
-  \item 在代码解释的过程中，\texttt{LOOP}应映射到相同行指令的地址。
+  \item 在代码解释的过程中，标签（\texttt{LOOP}）应映射到相同行指令的地址；
+  \item 第一条指令的地址为1，依次递增。
 \end{itemize}
 
 % 拟采用Python语言对用户代码进行处理，处理好的比特流可通过UART串口通信传入FPGA的BRAM。
@@ -738,16 +739,48 @@ CPU与内存（RAM）通过三条总线交互，分别为\textbf{控制总线}�
 
 
 \subsection{用户交互设计}\label{sec:interaction}
-该部分描述用户与FPGA的交互接口（按钮、按键等）以及看到的运行状态信息与结果显示设计。
+该部分描述用户与FPGA的交互接口（按钮、开关等）以及运行状态信息和结果显示的设计。
 
+\paragraph{全局复位}
 
+按下上侧按钮（BTNH）时，CPU触发全局复位信号，所有寄存器和内存数据清空，控制信号复位为初始状态。
+
+\paragraph{运行与停止}
+
+最左侧开关控制CPU的运行状态：
+\begin{itemize}
+  \item 开启状态：CPU开始执行指令。
+  \item 关闭状态：CPU停止运行并保持当前状态。
+\end{itemize}
+当CPU发出停止信号（HALT）时，右侧LED灯亮红色；当CPU处于运行状态时，右侧LED灯亮蓝色。
+
+\paragraph{运行模式与单步调试模式}
+
+CPU支持两种模式：
+\begin{itemize}
+  \item \textbf{运行模式}：CPU自动连续执行指令直至停止，适合快速验证结果。
+  \item \textbf{单步调试模式}：用户通过按下最中间的按钮（BTNC）控制CPU逐条执行指令。每次执行完一条指令后，CPU暂停，等待用户操作。
+\end{itemize}
+
+最右侧开关控制模式选择：
+\begin{itemize}
+  \item 开启状态：单步调试模式，左侧LED灯亮红色。
+  \item 关闭状态：运行模式，左侧LED灯亮蓝色。
+\end{itemize}
+
+\paragraph{结果与指令查看}
+
+\begin{itemize}
+  \item 按下左侧按钮（BTNL）：查看当前运算结果。
+  \item 按下右侧按钮（BTNR）：查看当前指令码和指令地址。
+\end{itemize}
 \section{核心模块设计}
 \subsection{时钟、复位与停止信号}
 CPU由\textbf{全局同步时钟}控制，时钟主频为50MHz。除复位信号外，所有控制逻辑与计算逻辑全部在时钟上升沿进行。UART传输部分使用100MHz的时钟主频。
 
 CPU设有\textbf{全局异步复位}信号，低电平有效。当异步复位时，内存中除指令集数据以外所有数据清空，所有寄存器清空，控制信号全部归为断开（0）。
 
-当CPU执行07号指令HALT时，CPU处于\textbf{停止}状态。与复位不同的是，此时所有寄存器不清空，但所有通路断开。在模块中使用\texttt{enable}信号标识。解除该状态的唯一方法是全局复位。当该按键被按下时，\texttt{enable}信号恢复为1。
+当CPU执行07号指令HALT时，CPU处于\textbf{停止}状态。与复位不同的是，此时所有寄存器不清空，但所有通路断开。解除该状态的唯一方法是全局复位。
 
 \subsection{UART传输与指令内存}
 指令写入通过Python脚本（附录~\ref{sec:appendices:python}~）完成，其可以根据用户输出一串UART格式的比特流。用户可通过PC上的串口调试设备连接UART端口进行传输。
@@ -889,12 +922,7 @@ CPU设有\textbf{全局异步复位}信号，低电平有效。当异步复位�
   \bottomrule
 \end{longtable}
 
-\subsubsection{仿真测试}
-\begin{figure}[htbp]
-  \centering
-  \includegraphics[width = 0.95\textwidth]{figure/instr_rom_sim.png}
-  \caption{指令内存部分仿真}
-\end{figure}
+
 
 
 \subsection{控制单元}
@@ -1435,25 +1463,82 @@ ACC模块支持以下功能：
   \item 在其他情况下，所有输出信号保持为0。
 \end{itemize}
 \subsection{用户面设计}
+所有来自用户的输入信号（按钮、开关）在按键消抖后传递给CPU和外设控制逻辑，所有来自CPU的输出信号通过FPGA外设（LED灯、七段显示器）控制逻辑传递给用户。
+\subsubsection{按键消抖模块}
+按键消抖模块（KEY\_JITTER）用于对用户输入的按钮或开关信号进行消抖处理，确保输入信号的稳定性，避免因机械抖动导致的误触发。
 
+\paragraph{模块基本信息：}
+\begin{itemize}
+  \item 模块名：\texttt{KEY\_JITTER}
+  \item 最新更新日期：\texttt{2025.4.25}
+  \item 是否经过测试：是
+\end{itemize}
 
-参考表~\ref{tab:CPU:DataPath}~，确定指令集中的每一条指令对应的控制信号，并存储到CU的内部寄存器中，即可完成CU的主要功能设计。
+\paragraph{模块功能：}
+KEY\_JITTER模块支持以下功能：
+\begin{itemize}
+  \item 对输入的按键信号进行采样和稳定性检测；
+  \item 通过计数器延迟，过滤掉机械抖动产生的短暂信号变化；
+  \item 输出稳定的按键信号，供其他模块使用。
+\end{itemize}
 
+\paragraph{模块外部接口：}
+\begin{longtable}{>{\bfseries}c c c c}
+  \caption{KEY\_JITTER模块外部接口} \\ 
+  \toprule
+  信号名 & 方向 & 位宽 & 描述 \\ 
+  \midrule
+  \endfirsthead
 
+  \multicolumn{4}{l}{\textbf{（续表）KEY\_JITTER模块外部接口}} \\ 
+  \toprule
+  信号名 & 方向 & 位宽 & 描述 \\ 
+  \midrule
+  \endhead
 
-% \subsection{分支预测}
+  \texttt{i\_clk} & 输入 & 1 & 系统时钟信号 \\ 
+  \texttt{key\_in} & 输入 & 1 & 原始按键输入信号 \\ 
+  \texttt{key\_out} & 输出 & 1 & 消抖后的稳定按键信号 \\ 
+  \bottomrule
+\end{longtable}
+
+\paragraph{模块行为：}
+\begin{itemize}
+  \item 按键输入信号\texttt{key\_in}通过两级寄存器进行采样，检测信号变化；
+  \item 当检测到信号变化时，计数器\texttt{cnt\_base}清零并开始计数；
+  \item 如果信号在计数器达到最大值\texttt{CNT\_MAX}之前保持稳定，则更新输出信号\texttt{key\_out}；
+  \item 如果信号在计数器计满之前发生变化，则重新开始计数；
+  \item 输出信号\texttt{key\_out}仅在信号稳定后更新。
+\end{itemize}
+
+\paragraph{模块参数：}
+\begin{itemize}
+  \item \texttt{CNT\_MAX}：计数器的最大值，用于设置消抖时间窗口。默认值为\texttt{20'hf\_ffff}，对应较长的消抖时间。
+\end{itemize}
+
+\subsubsection{七段显示器}
+
+\subsubsection{LED灯显示}
 
 \section{仿真验证}
 \subsection{功能验证}
-第一个测试样例为一个简单的加法器，计算：
-$$
-1+2+\dots +99 +100 =5050
-$$
+
+\subsubsection{简单加法器}
+
+\paragraph{仿真内容：}
+
+计算$1+2+\dots +99 +100 =5050$。
+
+\paragraph{激励设置：}
 
 用户首先编写源程序如下：
 \lstinputlisting[language=Assembly]{../designs/input_src/add_one_to_hundred.txt}
 
-通过python脚本将其转换为UART接收模块可以识别的二进制流，具体转换过程见附录~\ref{sec:appendices:python}。接下来以UART的时序给CPU模块激励，完成功能仿真。假设以115200波特率进行UART通信，UART接收模块的时钟频率为115200Hz，UART接收模块的时钟周期应当为8.68us。在仿真时，确定单位时钟为1ns，UART接收模块的时钟周期应当为8680个时钟周期。
+通过python脚本将其转换为UART接收模块可以识别的二进制流，具体转换过程见附录~\ref{sec:appendices:python}。采用115200波特率输入指令内存，当指令内存发出“传输完成”信号后，打开CPU的单步调试功能。每间隔0.1ms，向CPU发出一次“下一条指令”信号，直到CPU发出“停止”信号。
+
+\paragraph{仿真结果：}
+
+
 
 \subsection{时延分析}
 
