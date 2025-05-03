@@ -58,10 +58,20 @@ always @(*) begin
 
     case (ctrl_alu_op)
         3'b000: begin // ADD
-            ALU_RES_LOW = ALU_P + ALU_Q;
+            if(MF) begin
+                {ALU_RES_HIGH, ALU_RES_LOW} = {16'b0, ALU_P} + {16'b0, ALU_Q};
+            end
+            else begin
+                ALU_RES_LOW = ALU_P + ALU_Q;
+            end
         end
         3'b001: begin // SUB
-            ALU_RES_LOW = ALU_P - ALU_Q;
+            if(MF) begin
+                {ALU_RES_HIGH, ALU_RES_LOW} = {16'b0, ALU_P} - {16'b0, ALU_Q};
+            end
+            else begin
+                ALU_RES_LOW = ALU_P - ALU_Q;
+            end
         end
         3'b010: begin // MPY
             {ALU_RES_HIGH, ALU_RES_LOW} = ALU_P * ALU_Q;
@@ -75,11 +85,11 @@ always @(*) begin
         3'b101: begin // NOT
             ALU_RES_LOW = ~ALU_Q;
         end
-        3'b110: begin // SHIFTL
-            ALU_RES_LOW = ALU_P <<< 1;
+        3'b110: begin // SHIFTR
+            ALU_RES_LOW = ALU_P >>> ALU_Q;
         end
-        3'b111: begin // SHIFTR
-            ALU_RES_LOW = ALU_P >>> 1;
+        3'b111: begin // SHIFTL
+            ALU_RES_LOW = ALU_P <<< ALU_Q;
         end
         default: begin
             ALU_RES_LOW = 16'b0;
@@ -96,7 +106,20 @@ always @(posedge i_clk or negedge i_rst_n) begin
     end
     else if (ctrl_alu_en) begin
         BR <= ALU_RES_LOW;
-        MR <= ALU_RES_HIGH;
+        if(ctrl_alu_op == 3'b010) begin
+            MR <= ALU_RES_HIGH;
+        end
+        else begin
+            MR <= MR;
+        end
+
+    end
+    // On write back, BR and MR are set to 0
+    else if (C9) begin
+        BR <= 16'b0;
+    end
+    else if (C10) begin
+        MR <= 16'b0;
     end
     else begin
         BR <= BR;
@@ -119,18 +142,19 @@ always @(posedge i_clk or negedge i_rst_n) begin
            (ctrl_alu_op == 3'b111) ? ALU_P[0]  : 1'b0;   // SHIFTR lowest bit
         OF <= (ctrl_alu_op == 3'b000) ? ((ALU_P[15] == ALU_Q[15]) && (ALU_RES_LOW[15] != ALU_P[15])) : // ADD overflow
            (ctrl_alu_op == 3'b001) ? ((ALU_P[15] != ALU_Q[15]) && (ALU_RES_LOW[15] != ALU_P[15])) : // SUB overflow
-           (ctrl_alu_op == 3'b010) ? (ALU_RES_HIGH != 16'b0) : 1'b0; // MPY overflow
-        NF <= ALU_RES_LOW[15];
-        MF <= (ctrl_alu_op == 3'b010); // only MPY sets MF
+           (ctrl_alu_op == 3'b010) ? ((ALU_P[15] == ALU_Q[15]) &&(ALU_RES_HIGH[15] != 16'b0)) : 1'b0; // MPY overflow
+        NF <= (ALU_RES_HIGH != 16'b0) ? ALU_RES_HIGH[15] : ALU_RES_LOW[15];
+        MF <= (MR != 16'b0); // only for STOREH
     end
     else begin
         ZF <= ZF;
         CF <= CF;
         OF <= OF;
         NF <= NF;
-        MF <= MF;
+        MF <= (MR != 16'b0); // preventing one cycle ctrl_en
     end
 end
+
 
 // Input
 assign ALU_P = i_acc_alu_p;

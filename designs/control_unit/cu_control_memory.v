@@ -7,6 +7,7 @@
 * 3 ALU 
 * 16 internal bus
 * C2: Control for PC+1
+* Critical path: STOREH with indirect for 10 clock cycles
 */
 `timescale 1ns / 1ps
 
@@ -65,7 +66,7 @@ always @(*) begin
         7'h0F:
             control_word = 24'b00_10_1010_00000000_11000000;  // EX, 6 7
         7'h10:
-            control_word = 24'b00_11_0010_00000110_00000000;  // WB, 9 10
+            control_word = 24'b00_11_0010_00000010_00000000;  // WB, 9
 
         // JGZ & JMP
         7'h11:
@@ -121,18 +122,18 @@ always @(*) begin
         7'h20:
             control_word = 24'b00_11_0000_00000000_00000000;  // WB
 
-        // STOREH
+        // STOREH (fixed on 25/5/3)
         // Used for storage of high bytes of multiply results.
         // Executed after STORE Operation on MF = 1.
 
         7'h21:
-            control_word = 24'b00_10_0000_00000001_00000000;  // EX1, 8
+            control_word = 24'b00_10_0000_00010001_00000000;  // EX1, 8 12
         7'h22:
-            control_word = 24'b01_10_0000_00110000_00000001;  // WB1, 0 12 13 MAR+1
+            control_word = 24'b01_10_0000_00100100_00000001;  // WB1, 0 10 13 MAR+1
         7'h23:
-            control_word = 24'b00_10_0000_00000100_00000000;  // EX2，10
+            control_word = 24'b00_10_0000_00010000_00000000;  // EX2, 12
         7'h24:
-            control_word = 24'b00_11_0000_00110000_00000001;  // WB2，0 12 13
+            control_word = 24'b00_11_0000_00100000_00000001;  // WB2，0 13
 
         default:
             control_word = 24'b00_11_0000_00000000_00000000;  // Back to zero addr

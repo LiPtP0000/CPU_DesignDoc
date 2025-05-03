@@ -69,51 +69,112 @@ end
 initial begin
     i_rx = 1; // idle state high
     #(bit_period);
-    // Addr 1: LOAD IMMEDIATE 0
-    uart_send_byte(8'b01000001);
-    uart_send_byte(8'b00000000);
-    // STORE IMMEDIATE 1
-    uart_send_byte(8'b10000001);
-    uart_send_byte(8'b10000000);
-    // LOAD IMMEDIATE 1
-    uart_send_byte(8'b01000001);
-    uart_send_byte(8'b10000000);
-    // STORE IMMEDIATE 2
-    uart_send_byte(8'b10000001);
-    uart_send_byte(8'b01000000);
-    // LOAD 1
-    uart_send_byte(8'b01000000);
-    uart_send_byte(8'b10000000);
-    // ADD 2
-    uart_send_byte(8'b11000000);
-    uart_send_byte(8'b01000000);
-    // STORE IMMEDIATE 1
-    uart_send_byte(8'b10000001);
-    uart_send_byte(8'b10000000);
-    // LOAD 2
-    uart_send_byte(8'b01000000);
-    uart_send_byte(8'b01000000);
-    // ADD IMMEDIATE 1
-    uart_send_byte(8'b11000001);
-    uart_send_byte(8'b10000000);
-    // STORE IMMDEDIATE 2
-    uart_send_byte(8'b10000001);
-    uart_send_byte(8'b01000000);
-    // SUB IMMEDIATE 100
-    uart_send_byte(8'b00100001);
-    uart_send_byte(8'b00100110);
-    // STORE 3
-    uart_send_byte(8'b10000001);
-    uart_send_byte(8'b11000000);
-    // JGZ 5
-    uart_send_byte(8'b10100001);
-    uart_send_byte(8'b10100000);
-    // LOAD IMMEDIATE 1
-    uart_send_byte(8'b01000000);
-    uart_send_byte(8'b10000000);
-    // HALT
-    uart_send_byte(8'b11100000);
-    uart_send_byte(8'b00000000);
+    // // Addr 1: LOAD IMMEDIATE 0
+    // uart_send_byte(8'b01000001);
+    // uart_send_byte(8'b00000000);
+    // // STORE IMMEDIATE 1
+    // uart_send_byte(8'b10000001);
+    // uart_send_byte(8'b10000000);
+    // // LOAD IMMEDIATE 1
+    // uart_send_byte(8'b01000001);
+    // uart_send_byte(8'b10000000);
+    // // STORE IMMEDIATE 2
+    // uart_send_byte(8'b10000001);
+    // uart_send_byte(8'b01000000);
+    // // LOAD 1
+    // uart_send_byte(8'b01000000);
+    // uart_send_byte(8'b10000000);
+    // // ADD 2
+    // uart_send_byte(8'b11000000);
+    // uart_send_byte(8'b01000000);
+    // // STORE IMMEDIATE 1
+    // uart_send_byte(8'b10000001);
+    // uart_send_byte(8'b10000000);
+    // // LOAD 2
+    // uart_send_byte(8'b01000000);
+    // uart_send_byte(8'b01000000);
+    // // ADD IMMEDIATE 1
+    // uart_send_byte(8'b11000001);
+    // uart_send_byte(8'b10000000);
+    // // STORE IMMDEDIATE 2
+    // uart_send_byte(8'b10000001);
+    // uart_send_byte(8'b01000000);
+    // // SUB IMMEDIATE 100
+    // uart_send_byte(8'b00100001);
+    // uart_send_byte(8'b00100110);
+    // // STORE 3
+    // uart_send_byte(8'b10000001);
+    // uart_send_byte(8'b11000000);
+    // // JGZ 5
+    // uart_send_byte(8'b10100001);
+    // uart_send_byte(8'b10100000);
+    // // LOAD IMMEDIATE 1
+    // uart_send_byte(8'b01000000);
+    // uart_send_byte(8'b10000000);
+    // // HALT
+    // uart_send_byte(8'b11100000);
+    // uart_send_byte(8'b00000000);
+
+// uart_send_byte(8'b01000001);
+// uart_send_byte(8'b11111111);
+// uart_send_byte(8'b00010001);
+// uart_send_byte(8'b01111111);
+// uart_send_byte(8'b10000001);
+// uart_send_byte(8'b10000000);
+// uart_send_byte(8'b01000001);
+// uart_send_byte(8'b11111111);
+// uart_send_byte(8'b00010000);
+// uart_send_byte(8'b10000000);
+// uart_send_byte(8'b10000001);
+// uart_send_byte(8'b11000000);
+// uart_send_byte(8'b01000000);
+// uart_send_byte(8'b11000000);
+// uart_send_byte(8'b01000000);
+// uart_send_byte(8'b00100000);
+// uart_send_byte(8'b11100000);
+// uart_send_byte(8'b00000000);
+
+// uart_send_byte(8'b01000001);
+// uart_send_byte(8'b10000000);
+// uart_send_byte(8'b10110001);
+// uart_send_byte(8'b11110000);
+// uart_send_byte(8'b00110001);
+// uart_send_byte(8'b01010000);
+// uart_send_byte(8'b10000001);
+// uart_send_byte(8'b10000000);
+// uart_send_byte(8'b10110001);
+// uart_send_byte(8'b11010000);
+// uart_send_byte(8'b10000001);
+// uart_send_byte(8'b01000000);
+// uart_send_byte(8'b01000000);
+// uart_send_byte(8'b10000000);
+// uart_send_byte(8'b01000000);
+// uart_send_byte(8'b01000000);
+// uart_send_byte(8'b11100000);
+// uart_send_byte(8'b00000000);
+
+uart_send_byte(8'b01000001);
+uart_send_byte(8'b00100110);
+uart_send_byte(8'b10000001);
+uart_send_byte(8'b10000000);
+uart_send_byte(8'b01000001);
+uart_send_byte(8'b11000110);
+uart_send_byte(8'b00100000);
+uart_send_byte(8'b10000000);
+uart_send_byte(8'b10010001);
+uart_send_byte(8'b00110000);
+uart_send_byte(8'b01010001);
+uart_send_byte(8'b11000000);
+uart_send_byte(8'b10000001);
+uart_send_byte(8'b01000000);
+uart_send_byte(8'b11010000);
+uart_send_byte(8'b01000000);
+uart_send_byte(8'b01100001);
+uart_send_byte(8'b11010000);
+uart_send_byte(8'b11000001);
+uart_send_byte(8'b10000000);
+uart_send_byte(8'b11100000);
+uart_send_byte(8'b00000000);
 end
 
 
@@ -131,13 +192,15 @@ task execute_instructions;
     begin
         user_sample = 0;
         wait(cpu_start == 1);
-        #1000;
+        repeat (10) @(posedge clk);
         while (!halt) begin
-            next_instr = 1;
-            #10 next_instr = 0;
-            #10000;
+            
             #10 user_sample = 1;
             #10 user_sample = 0;
+            #10000;
+            next_instr = 1;
+            #10 next_instr = 0;
+            repeat (10) @(posedge clk);    
         end
         $display("CPU halted at %t", $time);
         $display("ALU result: %h", alu_result);
@@ -187,5 +250,5 @@ TOP_CPU uut_cpu(
             .o_current_Opcode(current_opcode),
             .o_current_PC(current_pc)
         );
-        
+
 endmodule

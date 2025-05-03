@@ -12,10 +12,10 @@ MEMONICS = {
     "HALT":  0x07,
     "MPY":  0x08,
     "AND":  0x09,
-    "OR":   0x10,
-    "NOT":  0x11,
-    "SHIFTR": 0x12,
-    "SHIFTL":   0x13
+    "OR":   0x0A,
+    "NOT":  0x0B,
+    "SHIFTR": 0x0C,
+    "SHIFTL":   0x0D
 }
 
 def parse_assembly(lines):
@@ -124,7 +124,7 @@ def send_to_serial(bitstream:str) -> None:
 
 def main():
     os.chdir("./designs/input_src")
-    with open('add_one_to_hundred.txt', 'r') as file:
+    with open('logic.txt', 'r') as file:
         lines = file.readlines()  
 
     machine_words = parse_assembly(lines)
