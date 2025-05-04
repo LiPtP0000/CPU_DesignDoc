@@ -30,26 +30,27 @@ always @(posedge i_clk) begin
     if (key_in_r[0] != key_in_r[1]) begin
         cnt_base <= 20'b0;
     end
-    else if (cnt_base < CNT_MAX) begin
-        cnt_base <= cnt_base + 1'b1;
+    else if(key_in_r[0] == key_in_r[1]) begin
+        if (cnt_base < CNT_MAX) begin
+            cnt_base <= cnt_base + 1'b1;
+        end
+        else if (cnt_base == CNT_MAX) begin
+            key_value_r <= key_in_r[0];
+            cnt_base <= 20'b0;
+        end
     end
-    else if (cnt_base == CNT_MAX) begin
+    else begin
+        // reset logic
         cnt_base <= 20'b0;
     end
 end
 
 
 always @(posedge i_clk) begin
-    if (cnt_base == CNT_MAX) begin
-        key_value_r <= key_in_r[0];
-    end
-end
-
-always @(posedge i_clk) begin
     key_value_rd <= key_value_r;
     key_posedge <= (key_value_r & ~key_value_rd);
 end
 
-assign key_out = POSEDGE ? key_posedge : key_value_r;
+assign key_out = POSEDGE ? key_posedge : key_value_rd;
 
 endmodule

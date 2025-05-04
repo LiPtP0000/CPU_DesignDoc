@@ -21,3 +21,6 @@
 ../top/top.v
 ../user_interface/key_jitter.v
 ../user_interface/seven_segment.v
+../user_interface/top_seven_segment.v
+../user_interface/led_display.v
+../sim/tb_top.v

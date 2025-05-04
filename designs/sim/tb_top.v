@@ -1,25 +1,24 @@
-// Not Done
 `timescale 1ns/1ps
-module tb_CPU;
+module tb_TOP;
 
 // Parameters
 parameter bit_period = 8680; // 8.68us, if timescale is 1ns
-
+parameter MAX_DELAY_TOLERANCE = 3;
 // Registers
+reg clk;
+reg rst_n;
 reg i_rx;
 reg cpu_start;
 reg next_instr;
-reg user_sample;
-reg clk;
-reg rst_n;
 reg step_execution;
 reg sample_result;
 reg sample_instr;
 reg sample_flags;
-    // Wires
-wire instr_transmit_done;
+
+// Wires
+// wire instr_transmit_done;
 wire [7:0] max_addr_instr;
-wire halt;
+// wire halt;
 
 wire [7:0] seg_valid;
 wire [7:0] seg_value;
@@ -59,13 +58,14 @@ end
 initial begin
     rst_n = 1;
     #100 rst_n = 0;
-    #5 rst_n = 1;
+    repeat (10) @(posedge clk);
+    rst_n = 1;
 end
 
 // DumpFile
 initial begin
-    $dumpfile("cpu_0428.vcd");
-    $dumpvars(0, tb_CPU);
+    $dumpfile("top_0504.vcd");
+    $dumpvars(0, tb_TOP);
 end
 
 
@@ -75,38 +75,72 @@ end
 task cpu_start_task;
     begin
         cpu_start = 0;
-        wait(instr_transmit_done);
-        #1000 cpu_start = 1;
+        step_execution = 0;
+        wait(RGB2_GREEN);
+        #100000 cpu_start = 1;
     end
 endtask
 
 // Task: Execute instructions
 task execute_instructions;
     begin
-        user_sample = 0;
+        sample_result = 0;
         wait(cpu_start == 1);
         repeat (10) @(posedge clk);
-        while (!halt) begin
-
-            #10 user_sample = 1;
-            #10 user_sample = 0;
-            #10000;
+        while (!RGB2_RED) begin
+            #10 sample_result = 1;
+            repeat (10) @(posedge clk);
+            #10 sample_result = 0;
+            repeat (100) @(posedge clk);
+            #10 sample_instr = 1;
+            repeat (10) @(posedge clk);
+            #10 sample_instr = 0;
+            repeat (100) @(posedge clk);
+            #10 sample_flags = 1;
+            repeat (10) @(posedge clk);
+            #10 sample_flags = 0;
+            repeat (100) @(posedge clk);
             next_instr = 1;
             #10 next_instr = 0;
             repeat (10) @(posedge clk);
         end
         $display("CPU halted at %t", $time);
-        $display("ALU result: %h", alu_result);
-        $display("ALU result high: %h", alu_result_high);
+        // $display("ALU result: %h", alu_result);
+        // $display("ALU result high: %h", alu_result_high);
     end
 endtask
-
+// Task: Check result
+task check_result;
+    begin
+        sample_flags = 0;
+        sample_instr = 0;
+        sample_result = 0;
+        if (RGB2_RED) begin
+            $display("CPU halted at %t", $time);
+            repeat (100) @(posedge clk);
+            #10 sample_result = 1;
+            repeat (10) @(posedge clk);
+            #10 sample_result = 0;
+            repeat (10000) @(posedge clk);
+            #10 sample_instr = 1;
+            repeat (10) @(posedge clk);
+            #10 sample_instr = 0;
+            repeat (10000) @(posedge clk);
+            #10 sample_flags = 1;
+            repeat (10) @(posedge clk);
+            #10 sample_flags = 0;
+            repeat (10000) @(posedge clk);
+            // $display("ALU result: %h", alu_result);
+            // $display("ALU result high: %h", alu_result_high);
+        end
+    end
+endtask
 // Task: Reset and restart CPU
 task reset_and_restart_cpu;
     begin
         #1000 cpu_start = 0;
         #1000 rst_n = 0;
-        #10 rst_n = 1;
+        #100 rst_n = 1;
         #(bit_period);
         uart_send_byte(8'b01000001);
         uart_send_byte(8'b00000000);
@@ -116,38 +150,44 @@ endtask
 // Main initial block
 initial begin
     cpu_start_task();
-    execute_instructions();
+    // execute_instructions();
+    
+    wait(RGB2_RED);
+    check_result();
     reset_and_restart_cpu();
-    wait(instr_transmit_done);
+    wait(RGB2_GREEN);
     #10000 $finish;
 end
 
 
 
-TOP uut_cpu_top (
-    .CLK_100MHz(clk),            // 时钟信号
-    .START_CPU(cpu_start),       // 启动 CPU 信号
-    .STEP_EXECUTION(step_execution), // 单步执行信号
-    .BTNC(next_instr),           // 中间按钮（下一条指令）
-    .BTNL(sample_result),                     // 左按钮（未使用）
-    .BTNR(sample_instr),                     // 右按钮（未使用）
-    .BTNU(rst_n),                     // 上按钮（复位）
-    .BTND(sample_flags),                     // 下按钮（未使用）
-    .RXD(i_rx),                  // UART 接收数据
-    .SEG_VALID(seg_valid),                // 数码管有效信号（未连接）
-    .SEG_VALUE(seg_value),                // 数码管显示值（未连接）
-    .RGB1_RED(RGB1_RED),                 // RGB LED 1 红色（未连接）
-    .RGB1_BLUE(RGB1_BLUE),                // RGB LED 1 蓝色（未连接）
-    .RGB2_RED(RGB2_RED),                 // RGB LED 2 红色（未连接）
-    .RGB2_BLUE(RGB2_BLUE),                // RGB LED 2 蓝色（未连接）
-    .RGB2_GREEN(RGB2_GREEN)                // RGB LED 2 绿色（未连接）
-);
+TOP #(
+        .MAX_DELAY_TOLERANCE(MAX_DELAY_TOLERANCE)
+    )uut_cpu_top (
+        .CLK_100MHz(clk),            // 时钟信号
+        .START_CPU(cpu_start),       // 启动 CPU 信号
+        .STEP_EXECUTION(step_execution), // 单步执行信号
+        .BTNC(next_instr),           // 中间按钮（下一条指令）
+        .BTNL(sample_result),                     // 左按钮（未使用）
+        .BTNR(sample_instr),                     // 右按钮（未使用）
+        .BTNU(rst_n),                     // 上按钮（复位）
+        .BTND(sample_flags),                     // 下按钮（未使用）
+        .RXD(i_rx),                  // UART 接收数据
+        .SEG_VALID(seg_valid),                // 数码管有效信号（未连接）
+        .SEG_VALUE(seg_value),                // 数码管显示值（未连接）
+        .RGB1_RED(RGB1_RED),                 // RGB LED 1 红色（未连接）
+        .RGB1_BLUE(RGB1_BLUE),                // RGB LED 1 蓝色（未连接）
+        .RGB2_RED(RGB2_RED),                 // RGB LED 2 红色（未连接）
+        .RGB2_BLUE(RGB2_BLUE),                // RGB LED 2 蓝色（未连接）
+        .RGB2_GREEN(RGB2_GREEN)                // RGB LED 2 绿色（未连接）
+    );
 
 
 // RXD Data
 initial begin
     i_rx = 1; // idle state high
-    #(bit_period);
+    wait(rst_n == 0);
+    #1000;
     // // Addr 1: LOAD IMMEDIATE 0
     // uart_send_byte(8'b01000001);
     // uart_send_byte(8'b00000000);

@@ -1,0 +1,48 @@
+[*]
+[*] GTKWave Analyzer v3.3.116 (w)1999-2023 BSI
+[*] Sun May  4 15:00:12 2025
+[*]
+[dumpfile] "/home/liptp/CPU_Design/CPU_DesignDoc/designs/sim/top_0504.vcd"
+[dumpfile_mtime] "Sun May  4 14:55:29 2025"
+[dumpfile_size] 99979100
+[savefile] "/home/liptp/CPU_Design/CPU_DesignDoc/designs/sim/sim_user_interface.gtkw"
+[timestart] 5788700000
+[size] 1600 894
+[pos] -428 -159
+*-26.778309 5977425000 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1
+[treeopen] tb_TOP.
+[treeopen] tb_TOP.uut_cpu_top.
+[sst_width] 276
+[signals_width] 228
+[sst_expanded] 1
+[sst_vpaned_height] 260
+@420
+tb_TOP.MAX_DELAY_TOLERANCE
+tb_TOP.uut_cpu_top.segment_display.SCAN_INTERVAL
+@28
+tb_TOP.clk
+tb_TOP.rst_n
+tb_TOP.i_rx
+[color] 3
+tb_TOP.RGB1_BLUE
+[color] 3
+tb_TOP.RGB1_RED
+[color] 3
+tb_TOP.RGB2_BLUE
+[color] 3
+tb_TOP.RGB2_GREEN
+[color] 3
+tb_TOP.RGB2_RED
+tb_TOP.cpu_start
+tb_TOP.sample_flags
+tb_TOP.sample_instr
+tb_TOP.sample_result
+@22
+[color] 3
+tb_TOP.uut_cpu_top.segment_display.segment_data[31:0]
+tb_TOP.seg_valid[7:0]
+tb_TOP.seg_value[7:0]
+@28
+tb_TOP.step_execution
+[pattern_trace] 1
+[pattern_trace] 0

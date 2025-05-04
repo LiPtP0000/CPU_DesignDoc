@@ -11,7 +11,9 @@ This is the very top module of the CPU.
 1. When in STEP mode, instantiate a button to fetch specified Register Value. Use switches to decide the displayed register. 
 2. When in AUTO mode, show ACC value and MR value on HALT (optional).
 */
-module  TOP(
+module  TOP #(
+            parameter MAX_DELAY_TOLERANCE = 20'hfffff
+        )(
             // Should only declare signals from/to the board
             // and they are directly assigned to physical ports via constraint files.
             CLK_100MHz,
@@ -54,7 +56,8 @@ wire clk = CLK_100MHz;
 wire user_sample = button_check_flags | button_check_instruction | button_check_result;
 wire switch_step_execution;     // using a switch resource
 wire switch_start_cpu;
-wire button_rst_n;
+wire button_rst;
+wire button_rst_n = !button_rst;
 wire button_next_instr;
 wire button_check_result;
 wire button_check_instruction;
@@ -97,95 +100,97 @@ TOP_CPU cpu (
 // =========================== User Interfaces ===============================
 
 // Signals prefixed "switch" should be instantiated here
-KEY_JITTER ins_switch_start_cpu(
+KEY_JITTER #(   .CNT_MAX(MAX_DELAY_TOLERANCE),
+                .POSEDGE(1'b0)
+            ) ins_switch_start_cpu(
                .i_clk(clk),
                .key_in(START_CPU),
                .key_out(switch_start_cpu)
            );
-KEY_JITTER ins_switch_step_execution(
+KEY_JITTER #(   .CNT_MAX(MAX_DELAY_TOLERANCE),
+                .POSEDGE(1'b0)
+            ) ins_switch_step_execution(
                .i_clk(clk),
                .key_in(STEP_EXECUTION),
                .key_out(switch_step_execution)
            );
 
 // Signals prefixed "button" should be instantiated here
-KEY_JITTER #(
-               .POSEDGE(1'b1)
-           ) ins_button_reset (
+KEY_JITTER #(   .CNT_MAX(MAX_DELAY_TOLERANCE),
+                .POSEDGE(1'b1)
+            ) ins_button_reset (
                .i_clk(clk),
                .key_in(BTNU),
-               .key_out(button_rst_n)
+               .key_out(button_rst)
            );
 
-KEY_JITTER #(
-               .POSEDGE(1'b1)
-           ) ins_button_next_instr(
+KEY_JITTER #(   .CNT_MAX(MAX_DELAY_TOLERANCE),
+                .POSEDGE(1'b1)
+            ) ins_button_next_instr(
                .i_clk(clk),
                .key_in(BTNC),
                .key_out(button_next_instr)
            );
 
-KEY_JITTER #(
-               .POSEDGE(1'b1)
-           ) ins_button_check_result(
+KEY_JITTER #(   .CNT_MAX(MAX_DELAY_TOLERANCE),
+                .POSEDGE(1'b1)
+            ) ins_button_check_result(
                .i_clk(clk),
                .key_in(BTNL),
                .key_out(button_check_result)
            );
 
-KEY_JITTER #(
-               .POSEDGE(1'b1)
-           ) ins_button_check_instruction(
+KEY_JITTER #(   .CNT_MAX(MAX_DELAY_TOLERANCE),
+                .POSEDGE(1'b1)
+            ) ins_button_check_instruction(
                .i_clk(clk),
                .key_in(BTNR),
                .key_out(button_check_instruction)
            );
 
-KEY_JITTER #(
-               .POSEDGE(1'b1)
-           ) ins_button_check_flags(
+KEY_JITTER #(   .CNT_MAX(MAX_DELAY_TOLERANCE),
+                .POSEDGE(1'b1)
+            ) ins_button_check_flags(
                .i_clk(clk),
                .key_in(BTND),
                .key_out(button_check_flags)
            );
 
 // Signals prefixed "segment" should be instantiated here
-reg [31:0] segment_data;
-always @(posedge clk) begin
-    if(button_check_instruction) begin
-        segment_data <= {16'b0, segment_current_PC, segment_current_Opcode};
-    end else if(button_check_flags) begin
-        segment_data <= {27'b0, segment_flags};
-    end else if(button_check_result) begin
-        segment_data <= {segment_result_high, segment_result_low};
-    end else if(switch_start_cpu) begin // ponder on this
-        segment_data <= {segment_result_high, segment_result_low};
-    end else begin
-        segment_data <= {24'b0, segment_max_instr_addr};
-    end
-end
-
-SEVEN_SEGMENT_DISPLAY seven_segment(
-    .i_clk(clk),
-    .i_rst_n(button_rst_n),
-    .i_data(segment_data),
-    .o_seg_valid(SEG_VALID),
-    .o_seg_value(SEG_VALUE)
-);
-
+SEVEN_SEGMENT_DISPLAY #(
+           .SCAN_INTERVAL(16'd500)
+) segment_display (
+           .i_clk(clk),
+           .i_rst_n(button_rst_n),
+           .switch_start_cpu(switch_start_cpu),
+           .button_check_instruction(button_check_instruction),
+           .button_check_flags(button_check_flags),
+           .button_check_result(button_check_result),
+           .light_instr_transmit_done(light_instr_transmit_done),
+           .segment_current_PC(segment_current_PC),
+           .segment_current_Opcode(segment_current_Opcode),
+           .segment_flags(segment_flags),
+           .segment_result_high(segment_result_high),
+           .segment_result_low(segment_result_low),
+           .segment_max_instr_addr(segment_max_instr_addr),
+           .o_seg_valid(SEG_VALID),
+           .o_seg_value(SEG_VALUE)
+       );
 // Signals prefixed "light" should be instantiated here
 
-assign light_cpu_auto = !switch_step_execution;
-assign light_cpu_running = switch_start_cpu & !light_halt;
-assign light_cpu_step = switch_step_execution;
-
-// ============================ Assignments ==================================
-
-assign RGB1_RED = light_cpu_step;
-assign RGB1_BLUE = light_cpu_auto;
-assign RGB2_RED = light_halt;
-assign RGB2_BLUE = light_cpu_running;
-assign RGB2_GREEN = light_instr_transmit_done & !switch_start_cpu;
+LED_DISPLAY led_display(
+            .i_clk(clk),
+            .i_rst_n(button_rst_n),
+            .i_instr_transmit_done(light_instr_transmit_done),
+            .i_halt(light_halt),
+            .i_step_execution(switch_step_execution),
+            .i_start_cpu(switch_start_cpu),
+            .RGB1_RED(RGB1_RED),
+            .RGB1_BLUE(RGB1_BLUE),
+            .RGB2_RED(RGB2_RED),
+            .RGB2_BLUE(RGB2_BLUE),
+            .RGB2_GREEN(RGB2_GREEN)
+        );
 
 // ============================ End of Module ================================
 endmodule
