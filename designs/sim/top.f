@@ -1,4 +1,4 @@
-# For tb_cpu.v
+# For top.v
 ../registers/acc.v
 ../registers/alu.v
 ../registers/mar.v
@@ -18,4 +18,6 @@
 ../control_unit/cu_control_memory.v
 ../control_unit/cu_top.v
 ../top/cpu_top.v
-./tb_cpu.v
+../top/top.v
+../user_interface/key_jitter.v
+../user_interface/seven_segment.v

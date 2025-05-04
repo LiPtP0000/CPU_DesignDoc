@@ -1,5 +1,4 @@
 `timescale 1ns / 1ps
-// Use 50MHz Clock
 // Currently not used
 module SEVEN_SEGMENT_DISPLAY (
     i_clk,

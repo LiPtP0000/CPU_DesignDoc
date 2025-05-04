@@ -1,6 +1,9 @@
 `timescale 1ns / 1ps
 
-module KEY_JITTER(
+module KEY_JITTER #(
+           parameter CNT_MAX = 20'hf_ffff,
+           parameter POSEDGE = 1'b0
+       )(
            i_clk,
            key_in,
            key_out
@@ -10,13 +13,12 @@ input i_clk;
 input key_in;
 output key_out;
 
-// Counter Max
-parameter CNT_MAX = 20'hf_ffff;
 
 reg [1:0] key_in_r;
 reg [19:0] cnt_base;
 reg key_value_r;
-// reg key_value_rd;
+reg key_value_rd;
+reg key_posedge;
 
 // Sample and stage key input
 always @(posedge i_clk) begin
@@ -43,6 +45,11 @@ always @(posedge i_clk) begin
     end
 end
 
-assign key_out = key_value_r;
+always @(posedge i_clk) begin
+    key_value_rd <= key_value_r;
+    key_posedge <= (key_value_r & ~key_value_rd);
+end
+
+assign key_out = POSEDGE ? key_posedge : key_value_r;
 
 endmodule

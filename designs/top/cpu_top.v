@@ -94,6 +94,13 @@ always @(posedge i_clk or negedge i_rst_n) begin
             o_alu_result_low <= ALU_RES_LOW;
             o_alu_result_high <= ALU_RES_HIGH;
         end
+        // 5.4 add halt logic
+        else if(halt) begin
+            o_current_Opcode <= IR;
+            o_current_PC <= PC;
+            o_alu_result_low <= ALU_RES_LOW;
+            o_alu_result_high <= ALU_RES_HIGH;
+        end
     end
 end
 
