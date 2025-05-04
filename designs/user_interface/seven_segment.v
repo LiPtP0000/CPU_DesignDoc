@@ -81,7 +81,7 @@ always @(*) begin
 end
 
 // Encoder of 7-segment display
-parameter SEG_0 = 8'b1100_0000, SEG_1 = 8'b1111_1001,
+localparam SEG_0 = 8'b1100_0000, SEG_1 = 8'b1111_1001,
           SEG_2 = 8'b1010_0100, SEG_3 = 8'b1011_0000,
           SEG_4 = 8'b1001_1001, SEG_5 = 8'b1001_0010,
           SEG_6 = 8'b1000_0010, SEG_7 = 8'b1111_1000,
@@ -91,7 +91,7 @@ parameter SEG_0 = 8'b1100_0000, SEG_1 = 8'b1111_1001,
           SEG_E = 8'b1000_0110, SEG_F = 8'b1000_1110;
 
 // Something else to display
-parameter SEG_S = 8'b1011_1111, SEG_r = 8'b1010_1111,
+localparam SEG_S = 8'b1011_1111, SEG_r = 8'b1010_1111,
           SEG_o = 8'b1010_0011, SEG_n = 8'b1111_1111,
           SEG_ot =8'b1001_1100, SEG_left = 8'b1111_1100,
           SEG_right = 8'b1101_1110, SEG_happy =8'b1110_0011,

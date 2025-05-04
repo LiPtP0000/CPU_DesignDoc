@@ -83,7 +83,7 @@ always @(posedge i_clk or negedge i_rst_n) begin
     end
 end
 always @(posedge i_clk or negedge i_rst_n) begin
-    if(i_rst_n) begin
+    if(!i_rst_n) begin
         RGB1_BLUE_reg <= 1'b0;
         RGB1_RED_reg <= 1'b0;
     end

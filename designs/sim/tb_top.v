@@ -4,6 +4,7 @@ module tb_TOP;
 // Parameters
 parameter bit_period = 8680; // 8.68us, if timescale is 1ns
 parameter MAX_DELAY_TOLERANCE = 3;
+parameter SCAN_INTERVAL = 16'd500;
 // Registers
 reg clk;
 reg rst_n;
@@ -17,7 +18,7 @@ reg sample_flags;
 
 // Wires
 // wire instr_transmit_done;
-wire [7:0] max_addr_instr;
+// wire [7:0] max_addr_instr;
 // wire halt;
 
 wire [7:0] seg_valid;
@@ -162,7 +163,8 @@ end
 
 
 TOP #(
-        .MAX_DELAY_TOLERANCE(MAX_DELAY_TOLERANCE)
+        .MAX_DELAY_TOLERANCE(MAX_DELAY_TOLERANCE),
+        .SCAN_INTERVAL(SCAN_INTERVAL)
     )uut_cpu_top (
         .CLK_100MHz(clk),            // 时钟信号
         .START_CPU(cpu_start),       // 启动 CPU 信号

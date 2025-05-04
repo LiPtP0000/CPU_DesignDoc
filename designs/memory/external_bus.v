@@ -51,7 +51,7 @@ wire [7:0] ADDRESS_BUS = i_mar_address_bus;
 reg memory_select;
 
 // Memory Select logic on t1
-always @(posedge i_clk or i_rst_n) begin
+always @(posedge i_clk or negedge i_rst_n) begin
     if(!i_rst_n) begin
         memory_select <= 1'b0; // Default to RAM
     end

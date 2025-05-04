@@ -25,7 +25,6 @@ module TOP_CPU(
            o_halt,
            o_alu_result_low,
            o_alu_result_high,
-           o_alu_op,
            o_flags,
            o_current_Opcode,
            o_current_PC
@@ -43,9 +42,8 @@ input i_start_cpu; // start CPU execution
 output o_instr_transmit_done;
 output [7:0] o_max_addr;
 output o_halt; // CPU halt signal
-output [2:0] o_alu_op; // ALU operation code
-output [4:0] o_flags; // ALU flags
 
+output reg [4:0] o_flags; // ALU flags
 output reg [7:0] o_current_Opcode;
 output reg [7:0] o_current_PC;
 output reg [15:0] o_alu_result_low;
@@ -86,6 +84,7 @@ always @(posedge i_clk or negedge i_rst_n) begin
         o_current_PC <= 8'b0;
         o_alu_result_low <= 16'b0;
         o_alu_result_high <= 16'b0;
+        o_flags <= 5'b0;
     end
     else begin
         if(i_user_sample && ctrl_step_execution && i_start_cpu) begin
@@ -93,13 +92,21 @@ always @(posedge i_clk or negedge i_rst_n) begin
             o_current_PC <= PC;
             o_alu_result_low <= ALU_RES_LOW;
             o_alu_result_high <= ALU_RES_HIGH;
+            o_flags <= flags;
         end
-        // 5.4 add halt logic
-        else if(halt) begin
-            o_current_Opcode <= IR;
-            o_current_PC <= PC;
-            o_alu_result_low <= ALU_RES_LOW;
-            o_alu_result_high <= ALU_RES_HIGH;
+        else if(!i_start_cpu) begin
+            o_current_Opcode <= 8'b0;
+            o_current_PC <= 8'b0;
+            o_alu_result_low <= 16'b0;
+            o_alu_result_high <= 16'b0;
+            o_flags <= 5'b0;
+        end
+        else begin
+            o_current_Opcode <= o_current_Opcode;
+            o_current_PC <= o_current_PC;
+            o_alu_result_low <= o_alu_result_low;
+            o_alu_result_high <= o_alu_result_high;
+            o_flags <= o_flags;
         end
     end
 end
@@ -107,8 +114,6 @@ end
 // Assignments
 
 assign o_halt = halt;
-assign o_flags = flags;
-assign o_alu_op = alu_op[2:0];      // The highest bit is enable signal
 
 
 
@@ -133,7 +138,6 @@ EXTERNAL_BUS external_bus(
              );
 DATA_RAM data_ram(
              .i_clk(i_clk),
-             .i_rst_n(i_rst_n),
              .ctrl_write(en_write_to_data),
              .i_addr_write(ADDR_BUS_MEMORY),
              .i_data_write(DATA_BUS_MEMORY),
@@ -170,7 +174,6 @@ REG_TOP internal_registers(
             .i_alu_op(alu_op),
             .i_ctrl_halt(halt),
             .i_ctrl_mar_increment(mar_increment),
-            .C0(C0),
             .C1(C1),
             .C2(C2),
             .C3(C3),
@@ -183,7 +186,6 @@ REG_TOP internal_registers(
             .C10(C10),
             .C11(C11),
             .C12(C12),
-            .C13(C13),
             .C14(C14),
             .C15(C15)
         );

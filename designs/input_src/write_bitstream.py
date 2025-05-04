@@ -143,6 +143,6 @@ def main():
         print(f"uart_send_byte(8'b{reversed_bits});")
 
     # For FPGA Verification:
-    # send_to_serial(bits)
+    send_to_serial(bits)
 
 main()

@@ -24,7 +24,6 @@ module REG_TOP(
            i_alu_op,
            i_ctrl_halt,
            i_ctrl_mar_increment,
-           C0,
            C1,
            C2,
            C3,
@@ -37,7 +36,6 @@ module REG_TOP(
            C10,
            C11,
            C12,
-           C13,
            C14,
            C15
        );
@@ -53,12 +51,11 @@ input [15:0] i_memory_data;
 input [3:0] i_alu_op; // C19 - C16
 input i_ctrl_halt;    // C23
 input i_ctrl_mar_increment; // C22
-input C0, C1, C2, C3, C4, C5, C6, C7, C8, C9, C10, C11, C12, C13, C14, C15;
+input  C1, C2, C3, C4, C5, C6, C7, C8, C9, C10, C11, C12, C14, C15;
 
 // To External Bus
 output [7:0] o_memory_addr;
 output [15:0] o_memory_data;
-output o_memory_en;
 
 // To Control Unit
 output [7:0] o_ir_cu;

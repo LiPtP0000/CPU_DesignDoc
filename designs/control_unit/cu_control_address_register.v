@@ -40,17 +40,30 @@ always @(posedge i_clk) begin
     ctrl_cpu_start_reg <= ctrl_cpu_start;
 end
 
-wire indirect_flag = ctrl_cpu_start ? (!ir_data[4] && (ir_data[3:0]!= 4'b0)) : 1'b0;
-reg indirect_done;
 reg [4:0] ir_data;
 reg [6:0] CAR;
+reg indirect_done;
+wire indirect_flag = ctrl_cpu_start ? (!ir_data[4] && (ir_data[3:0]!= 4'b0)) : 1'b0;
 
-
-always @(*) begin
-    if(i_ir_data != 4'b0) begin
-        ir_data = i_ir_data[4:0];
+always @(posedge i_clk or negedge i_rst_n) begin
+    if (!i_rst_n) begin
+        ir_data <= 5'b0; 
+    end
+    else begin
+        if (i_ir_data[3:0] != 3'b0) begin
+            ir_data <= i_ir_data[4:0]; 
+        end
     end
 end
+
+// always @(*) begin
+//     if(i_ir_data[3:0] != 3'b0) begin
+//         ir_data = i_ir_data[4:0];
+//     end
+//     else begin
+//         ir_data = ir_data;
+//     end
+// end
 
 always @(posedge i_clk or negedge i_rst_n) begin
     if (!i_rst_n) begin
@@ -68,7 +81,6 @@ always @(posedge i_clk or negedge i_rst_n) begin
                     CAR <= 7'h05;
                     indirect_done <= 1'b1;
                 end
-
                 else begin
                     case (ir_data[3:0])
                         4'd1: begin

@@ -18,9 +18,6 @@ wire [7:0] max_addr_instr;
 wire halt;
 wire [15:0] alu_result;
 wire [15:0] alu_result_high;
-wire [2:0] alu_op;
-wire [15:0] alu_P;
-wire [15:0] alu_Q;
 wire [4:0] flags;
 wire [7:0] current_opcode;
 wire [7:0] current_pc;
@@ -245,7 +242,6 @@ TOP_CPU uut_cpu(
             .o_halt(halt),
             .o_alu_result_low(alu_result),
             .o_alu_result_high(alu_result_high),
-            .o_alu_op(alu_op),
             .o_flags(flags),
             .o_current_Opcode(current_opcode),
             .o_current_PC(current_pc)

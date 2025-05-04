@@ -12,7 +12,8 @@ This is the very top module of the CPU.
 2. When in AUTO mode, show ACC value and MR value on HALT (optional).
 */
 module  TOP #(
-            parameter MAX_DELAY_TOLERANCE = 20'hfffff
+            parameter MAX_DELAY_TOLERANCE = 20'hfffff,
+            parameter SCAN_INTERVAL = 16'd30000
         )(
             // Should only declare signals from/to the board
             // and they are directly assigned to physical ports via constraint files.
@@ -53,7 +54,7 @@ output RGB2_GREEN;
 
 // ============================ Wires =======================================
 wire clk = CLK_100MHz;
-wire user_sample = button_check_flags | button_check_instruction | button_check_result;
+
 wire switch_step_execution;     // using a switch resource
 wire switch_start_cpu;
 wire button_rst;
@@ -62,6 +63,7 @@ wire button_next_instr;
 wire button_check_result;
 wire button_check_instruction;
 wire button_check_flags;
+wire user_sample = button_check_flags | button_check_instruction | button_check_result;
 
 wire light_instr_transmit_done;   // RGB2 Green
 wire light_halt;                  // RGB2 Red
@@ -92,7 +94,6 @@ TOP_CPU cpu (
             .o_halt(light_halt),
             .o_alu_result_low(segment_result_low),
             .o_alu_result_high(segment_result_high),
-            .o_alu_op(),
             .o_flags(segment_flags),
             .o_current_Opcode(segment_current_Opcode),
             .o_current_PC(segment_current_PC)
@@ -158,7 +159,7 @@ KEY_JITTER #(   .CNT_MAX(MAX_DELAY_TOLERANCE),
 
 // Signals prefixed "segment" should be instantiated here
 SEVEN_SEGMENT_DISPLAY #(
-           .SCAN_INTERVAL(16'd500)
+           .SCAN_INTERVAL(SCAN_INTERVAL)
 ) segment_display (
            .i_clk(clk),
            .i_rst_n(button_rst_n),
@@ -176,6 +177,7 @@ SEVEN_SEGMENT_DISPLAY #(
            .o_seg_valid(SEG_VALID),
            .o_seg_value(SEG_VALUE)
        );
+
 // Signals prefixed "light" should be instantiated here
 
 LED_DISPLAY led_display(

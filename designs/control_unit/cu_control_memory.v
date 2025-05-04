@@ -134,7 +134,7 @@ always @(*) begin
             control_word = 24'b00_10_0000_00010000_00000000;  // EX2, 12
         7'h24:
             control_word = 24'b00_11_0000_00100000_00000001;  // WB2，0 13
-
+        
         default:
             control_word = 24'b00_11_0000_00000000_00000000;  // Back to zero addr
     endcase

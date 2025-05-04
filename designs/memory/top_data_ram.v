@@ -8,7 +8,6 @@ function:
 */
 module DATA_RAM (
            i_clk,
-           i_rst_n,
            ctrl_write,
            i_addr_write,
            i_data_write,
@@ -17,7 +16,6 @@ module DATA_RAM (
            o_data_read
        );
 input           i_clk;
-input           i_rst_n;
 input           ctrl_write;
 input   [7:0]   i_addr_write;
 input   [15:0]  i_data_write;
@@ -30,18 +28,13 @@ reg [15:0] mem [0:255];
 
 // Write Operation, no initialization of data RAM
 integer i;
-always @(posedge i_clk or negedge i_rst_n) begin
-    if (!i_rst_n) begin
-        for (i = 0; i < 256; i = i + 1) begin
-            mem[i] <= 16'b0;
-        end
-    end
-    else begin
-        if (ctrl_write) begin
-            mem[i_addr_write] <= i_data_write;
-        end
+always @(posedge i_clk) begin
+
+    if (ctrl_write) begin
+        mem[i_addr_write] <= i_data_write;
     end
 end
+
 
 // Read Operation
 assign o_data_read = ctrl_read ? mem[i_addr_read] : 16'b0;
