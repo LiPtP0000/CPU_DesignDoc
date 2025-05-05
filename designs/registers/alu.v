@@ -138,8 +138,8 @@ always @(posedge i_clk or negedge i_rst_n) begin
     end
     else if (ctrl_alu_en) begin
         ZF <= (ctrl_alu_op == 3'b010) ? ({ALU_RES_HIGH, ALU_RES_LOW} == 32'b0) : (ALU_RES_LOW == 16'b0);
-        CF <= (ctrl_alu_op == 3'b110) ? ALU_P[15] :        // SHIFTL highest bit
-           (ctrl_alu_op == 3'b111) ? ALU_P[0]  : 1'b0;   // SHIFTR lowest bit
+        CF <= (ctrl_alu_op == 3'b110) ? ALU_P[15 - ALU_Q] :        // SHIFTL highest shiftout bit
+           (ctrl_alu_op == 3'b111) ? ALU_P[ALU_Q]  : 1'b0;   // SHIFTR lowest shiftout bit
         OF <= (ctrl_alu_op == 3'b000) ? ((ALU_P[15] == ALU_Q[15]) && (ALU_RES_LOW[15] != ALU_P[15])) : // ADD overflow
            (ctrl_alu_op == 3'b001) ? ((ALU_P[15] != ALU_Q[15]) && (ALU_RES_LOW[15] != ALU_P[15])) : // SUB overflow
            (ctrl_alu_op == 3'b010 && MR != 16'b0) ? ((ALU_P[15] == ALU_Q[15]) &&(ALU_RES_HIGH[15] != 16'b0)) :

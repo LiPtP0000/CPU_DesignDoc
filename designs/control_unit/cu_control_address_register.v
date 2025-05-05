@@ -100,9 +100,9 @@ always @(posedge i_clk or negedge i_rst_n) begin
 
                         4'd5: begin  // JGZ
                             if (i_ctrl_ZF || i_ctrl_NF)
-                                CAR <= 7'h11;
-                            else
                                 CAR <= 7'h00;
+                            else
+                                CAR <= 7'h11;
                         end
                         4'd6:
                             CAR <= 7'h11;     // JMP

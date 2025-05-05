@@ -123,7 +123,7 @@ def send_to_serial(bitstream:bytearray) -> None:
 
 def main():
     os.chdir("./designs/input_src")
-    with open('logic.txt', 'r') as file:
+    with open('add_one_to_hundred.txt', 'r') as file:
         lines = file.readlines()  
 
     machine_words = parse_assembly(lines)
