@@ -97,10 +97,10 @@ def assemble_to_bytes(code: list[int]) -> bytearray:
         result.append(word & 0xFF)         # operand
     return result
 
-def send_to_serial(bitstream:str) -> None:
+def send_to_serial(bitstream:bytearray) -> None:
     # must run on Linux system
     # FPGA Config: Baud rate = 115200, 8N1 Transmission
-    write_port = '/dev/ttyUSB1'
+    write_port = '/dev/ttyUSB0'
     ser = serial.Serial(
     port= write_port,
     baudrate= 115200,
@@ -111,9 +111,8 @@ def send_to_serial(bitstream:str) -> None:
     ) 
 
     # 向 FPGA 发送数据
-    for item in bitstream:
-        ser.write(item.encode())  # 将字符串转换为字节并发送
-        print(f"Write bit {item} to serial port {write_port}\n")
+    ser.write(bitstream)  # 将字符串转换为字节并发送
+    # print(f"Write bit {bitstream} to serial port {write_port}\n")
     print("Write successfully")
     # # 读取来自 FPGA 的数据
     # response = ser.readline()  # 读取一行数据（假设 FPGA 发送数据是以换行符结尾）
@@ -141,8 +140,8 @@ def main():
         bits = f"{b:08b}"          
         reversed_bits = bits[::-1]   
         print(f"uart_send_byte(8'b{reversed_bits});")
-
+    # print(binary)
     # For FPGA Verification:
-    send_to_serial(bits)
+    send_to_serial(binary)
 
 main()

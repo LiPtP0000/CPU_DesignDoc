@@ -56,9 +56,7 @@ task uart_send_byte(input [7:0] data);
         // Stop bit
         i_rx = 1;
         #(bit_period);
-        // Simulate random interval between bytes
-        #(bit_period);
-        random_clk_delay();
+        // There will be no interval between bytes
     end
 endtask
 

@@ -1,5 +1,5 @@
 `timescale 1ns / 1ps
-
+// 5.5 Update: adapt 8N1 format
 module UART (
            i_clk_uart,
            i_rst_n,
@@ -19,14 +19,14 @@ output wire       o_clear_sign;   // on no more data is received
 parameter MAX_WAITING_CLK = 434;
 
 
-parameter IDLE  = 3'b000;
-parameter START = 3'b001;
-parameter DATA  = 3'b010;
-parameter STOP  = 3'b011;
+// parameter IDLE  = 3'b000;
+parameter START = 2'b00;
+parameter DATA  = 2'b01;
+parameter STOP  = 2'b10;
 
-reg [2:0] current_state, next_state;
+reg [1:0] current_state, next_state;
 
-reg [4:0] bit_counter;            // At most 8bit data + start/stop
+reg [2:0] bit_counter;            // At most 8bit data
 reg [25:0] rx_no_data_counter;    // time-out counter
 reg [7:0] rx_shift_reg;           // data storage
 
@@ -35,7 +35,7 @@ reg clear;
 // data storage update
 always @(posedge i_clk_uart or negedge i_rst_n) begin
     if (!i_rst_n)
-        current_state <= IDLE;
+        current_state <= START;
     else
         current_state <= next_state;
 end
@@ -43,16 +43,14 @@ end
 // 状态转移逻辑
 always @(*) begin
     case (current_state)
-        IDLE:
-            next_state = (i_rx == 1'b0) ? START : IDLE;
         START:
-            next_state = DATA;
+            next_state = (i_rx == 1'b0) ? DATA : START;
         DATA:
-            next_state = (bit_counter == 8) ? STOP : DATA;
+            next_state = (bit_counter == 7) ? STOP : DATA;
         STOP:
-            next_state = IDLE;
+            next_state = START;
         default:
-            next_state = IDLE;
+            next_state = START;
     endcase
 end
 
@@ -65,15 +63,11 @@ always @(posedge i_clk_uart or negedge i_rst_n) begin
         o_data        <= 8'd0;
     end
     else begin
-        case (next_state)
-            IDLE: begin
-                bit_counter <= 0;
-                o_valid <= 0;
-                rx_shift_reg <= 0;
-            end
+        case (current_state)
             START: begin
                 bit_counter <= 0;
                 o_valid <= 0;
+                rx_shift_reg <= 0;
             end
             DATA: begin
                 // LSB first
@@ -100,7 +94,7 @@ always @(posedge i_clk_uart or negedge i_rst_n) begin
     end
     else begin
         case (current_state)
-            IDLE: begin
+            START: begin
                 if (rx_no_data_counter == MAX_WAITING_CLK) begin
                     rx_no_data_counter <= 0;
                     clear <= 1;
