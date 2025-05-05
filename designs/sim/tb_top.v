@@ -1,10 +1,13 @@
+// Author: LiPtP
+// Last modified: 2025.5.5
+// This is a testbench to test user interface and CPU.
 `timescale 1ns/1ps
 module tb_TOP;
 
 // Parameters
 parameter bit_period = 8680; // 8.68us, if timescale is 1ns
-parameter MAX_DELAY_TOLERANCE = 3;
-parameter SCAN_INTERVAL = 16'd500;
+parameter MAX_DELAY_TOLERANCE = 20'hfff;
+parameter SCAN_INTERVAL = 16'd300;
 // Registers
 reg clk;
 reg rst_n;
@@ -28,6 +31,16 @@ wire RGB1_RED;
 wire RGB2_BLUE;
 wire RGB2_RED;
 wire RGB2_GREEN;
+
+// Task: Insert random clock delay
+task random_clk_delay;
+    integer random_time;
+    begin
+        random_time = 10 + $random % 1000; 
+        repeat (random_time) @(posedge clk); 
+    end
+endtask
+
 // Task: UART send byte
 task uart_send_byte(input [7:0] data);
     integer i;
@@ -43,8 +56,9 @@ task uart_send_byte(input [7:0] data);
         // Stop bit
         i_rx = 1;
         #(bit_period);
-        i_rx = 1;
+        // Simulate random interval between bytes
         #(bit_period);
+        random_clk_delay();
     end
 endtask
 
@@ -59,7 +73,8 @@ end
 initial begin
     rst_n = 1;
     #100 rst_n = 0;
-    repeat (10) @(posedge clk);
+    repeat (MAX_DELAY_TOLERANCE + 3) @(posedge clk);
+    #10
     rst_n = 1;
 end
 
@@ -76,73 +91,83 @@ end
 task cpu_start_task;
     begin
         cpu_start = 0;
-        step_execution = 0;
+        step_execution = 1;         // Edit step execution switch here
         wait(RGB2_GREEN);
-        #100000 cpu_start = 1;
+        #1000 cpu_start = 1;
     end
 endtask
 
-// Task: Execute instructions
+// Task: Execute instructions step by step
 task execute_instructions;
     begin
         sample_result = 0;
+        sample_instr = 0;
+        sample_flags = 0;
+        next_instr = 0;
+        // Wait for CPU to start
         wait(cpu_start == 1);
         repeat (10) @(posedge clk);
         while (!RGB2_RED) begin
             #10 sample_result = 1;
-            repeat (10) @(posedge clk);
+            repeat (MAX_DELAY_TOLERANCE + 3) @(posedge clk);
             #10 sample_result = 0;
             repeat (100) @(posedge clk);
             #10 sample_instr = 1;
-            repeat (10) @(posedge clk);
+            repeat (MAX_DELAY_TOLERANCE + 3) @(posedge clk);
             #10 sample_instr = 0;
             repeat (100) @(posedge clk);
             #10 sample_flags = 1;
-            repeat (10) @(posedge clk);
+            repeat (MAX_DELAY_TOLERANCE + 3) @(posedge clk);
             #10 sample_flags = 0;
             repeat (100) @(posedge clk);
             next_instr = 1;
+            repeat (MAX_DELAY_TOLERANCE + 3) @(posedge clk);
             #10 next_instr = 0;
-            repeat (10) @(posedge clk);
+            repeat (100) @(posedge clk);
         end
         $display("CPU halted at %t", $time);
         // $display("ALU result: %h", alu_result);
         // $display("ALU result high: %h", alu_result_high);
     end
 endtask
-// Task: Check result
+
+// Task: Check result after auto run
 task check_result;
     begin
         sample_flags = 0;
         sample_instr = 0;
         sample_result = 0;
-        if (RGB2_RED) begin
-            $display("CPU halted at %t", $time);
-            repeat (100) @(posedge clk);
-            #10 sample_result = 1;
-            repeat (10) @(posedge clk);
-            #10 sample_result = 0;
-            repeat (10000) @(posedge clk);
-            #10 sample_instr = 1;
-            repeat (10) @(posedge clk);
-            #10 sample_instr = 0;
-            repeat (10000) @(posedge clk);
-            #10 sample_flags = 1;
-            repeat (10) @(posedge clk);
-            #10 sample_flags = 0;
-            repeat (10000) @(posedge clk);
-            // $display("ALU result: %h", alu_result);
-            // $display("ALU result high: %h", alu_result_high);
-        end
+        wait(RGB2_RED);
+        $display("CPU halted at %t", $time);
+        #10 sample_result = 1;
+        repeat (MAX_DELAY_TOLERANCE + 3) @(posedge clk);
+        #10 sample_result = 0;
+        repeat (100) @(posedge clk);
+        #10 sample_instr = 1;
+        repeat (MAX_DELAY_TOLERANCE + 3) @(posedge clk);
+        #10 sample_instr = 0;
+        repeat (100) @(posedge clk);
+        #10 sample_flags = 1;
+        repeat (MAX_DELAY_TOLERANCE + 3) @(posedge clk);
+        #10 sample_flags = 0;
+        repeat (100) @(posedge clk);
+        next_instr = 1;
+        repeat (MAX_DELAY_TOLERANCE + 3) @(posedge clk);
+        #10 next_instr = 0;
+        repeat (100) @(posedge clk);
+        // $display("ALU result: %h", alu_result);
+        // $display("ALU result high: %h", alu_result_high);
     end
+    
 endtask
-// Task: Reset and restart CPU
+// Task: Reset and restart CPU, try send some byte again to test robustness
 task reset_and_restart_cpu;
     begin
         #1000 cpu_start = 0;
         #1000 rst_n = 0;
-        #100 rst_n = 1;
-        #(bit_period);
+        repeat (MAX_DELAY_TOLERANCE + 3) @(posedge clk);
+        #10 rst_n = 1;
+        random_clk_delay();
         uart_send_byte(8'b01000001);
         uart_send_byte(8'b00000000);
     end
@@ -150,11 +175,12 @@ endtask
 
 // Main initial block
 initial begin
-    cpu_start_task();
-    // execute_instructions();
-    
-    wait(RGB2_RED);
-    check_result();
+    cpu_start_task(); 
+    if(step_execution) begin
+        execute_instructions();
+    end else begin
+        check_result();
+    end
     reset_and_restart_cpu();
     wait(RGB2_GREEN);
     #10000 $finish;
@@ -189,7 +215,9 @@ TOP #(
 initial begin
     i_rx = 1; // idle state high
     wait(rst_n == 0);
-    #1000;
+    wait(rst_n == 1);
+    repeat (2* MAX_DELAY_TOLERANCE ) @(posedge clk);
+    #10
     // // Addr 1: LOAD IMMEDIATE 0
     // uart_send_byte(8'b01000001);
     // uart_send_byte(8'b00000000);

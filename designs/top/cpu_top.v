@@ -87,7 +87,7 @@ always @(posedge i_clk or negedge i_rst_n) begin
         o_flags <= 5'b0;
     end
     else begin
-        if(i_user_sample && ctrl_step_execution && i_start_cpu) begin
+        if(i_user_sample && i_start_cpu) begin
             o_current_Opcode <= IR;
             o_current_PC <= PC;
             o_alu_result_low <= ALU_RES_LOW;
