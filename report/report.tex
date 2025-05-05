@@ -116,13 +116,12 @@
 
 本文接下来的章节安排如下：
 
-第二章将介绍CPU内部架构，即指令集、内部寄存器、ALU、内外总线以及控制单元设计，第三章将主要介绍用户面的设计，包括前端输入指令、指令传入内存、结果显示，第四章是二、三章提出的设计方案的Verilog实现和分模块仿真结果，第五章是该设计的整体仿真结果和在NEXYS 4 DDR FPGA开发板上的测试结果。第六章对该设计进行了总结，并提出一些可改进的方向。另外，附录中还提供了设计的全部Verilog代码和项目地址。
-
-% 文献\cite{timeline}设计并实施了一个基于FPGA的五级流水线MIPS CPU课程项目，通过阶段性进度安排和动手实践，有效提升了学生对计算机体系结构的理解和项目完成率。受该工作的启发，本文针对本项目制定了工作安排如表所示。
+第二章将介绍CPU内部架构，即指令集、内部寄存器、ALU、内外总线以及控制单元设计，第三章将主要介绍用户面的设计，包括前端输入指令、指令传入内存和结果显示功能，第四章是二、三章提出的设计方案的Verilog实现和分模块仿真结果，第五章是该设计的整体仿真结果和在NEXYS 4 DDR FPGA开发板上的测试结果。第六章对该设计进行了总结，并提出一些可改进的方向。另外，附录中还提供了设计的全部Verilog代码和项目地址。
 
 \section{CPU结构设计}
 \subsection{总体架构}
 
+% Need Update
 CPU的总架构（包括内存、外设等）示意图可见图~\ref{fig:CPU}。
 \begin{figure}[htbp]
   \centering
@@ -131,9 +130,7 @@ CPU的总架构（包括内存、外设等）示意图可见图~\ref{fig:CPU}。
   \label{fig:CPU}
 \end{figure}
 
-CPU由控制单元（CU），逻辑运算单元（ALU），内存（Memory）和寄存器组（Registers）组成，除内存以外，其余单元由被CU生成的控制信号控制的数据通路（Data Path）连接。另外，MAR和MBR分别还和地址总线、数据总线相连接，用于与内存交互。控制单元和内存都和控制总线相连接，用于与外部控制信号交互。为简单起见，CPU的计算全部为\textbf{16位定点有符号数计算}。
-
-
+CPU由控制单元（CU），逻辑运算单元（ALU），数据内存（Data Memory）、指令内存（Instruction Memory）和寄存器组（Registers）组成，寄存器组通过被CU生成的控制信号控制的数据通路（Data Path）连接。另外，MAR和MBR分别还和外部地址总线、数据总线相连接，用于与内存交互。
 
 
 
@@ -280,7 +277,7 @@ CPU由控制单元（CU），逻辑运算单元（ALU），内存（Memory）和
   MF & Multiply Flag & 乘法运算结果超过16位，且高位未被读取时置1\\
 \end{longtable}
 \subsection{算术逻辑单元ALU}
-算术逻辑单元ALU负责进行大部分CPU内的计算\footnote{自增与PC赋值在设计中不引入ALU。}。
+算术逻辑单元ALU负责进行大部分CPU内的计算\footnote{自增与PC赋值在设计中不引入ALU。}。为简单起见，CPU的计算全部为\textbf{16位定点有符号数计算}。
 
 ALU与外围寄存器的控制通路见第~\ref{sec:datapath}~节。ALU受到来自控制单元的$\text{ALU}_{en}$和$\text{ALU}_{op}$控制，前者决定ALU能否进行运算，后者决定ALU执行什么运算。在$\text{ALU}_{en}$为1时，它通过ACC和MBR获取运算的两个数据ALU\_P和ALU\_Q，并将计算结果存入16位BR寄存器（若出现过乘法则可能存入MR寄存器），同时根据LU\_P、ALU\_Q和运算结果和更新Flags寄存器。
 
@@ -316,38 +313,6 @@ ALU与外围寄存器的控制通路见第~\ref{sec:datapath}~节。ALU受到来
 \end{longtable}
 
 由于在实际运算中，很可能会出现类似$m\times x +n$的运算。如果加法和减法不支持32位运算，则很可能导致乘法的结果也受溢出影响。因此，设计中引入了MF（Multiply Flag）寄存器，表示乘法运算的结果是否超过16位且未被存储。在MF为1时，加减法被允许进行32位运算，且在16位溢出时不会更新溢出标志位OF。而当出现存储指令STORE时，系统检测到此时MR和BR寄存器都不为0，则会顺次存储BR和MR寄存器（即执行STOREH指令，该指令是一条内部隐藏指令，具体内容见第~\ref{sec:ControlMemory}~节）。由于MR寄存器被读取，MF会被清零，以避免后续的加减法运算受到影响。
-% \begin{longtable}{c c c c c c c}
-%   \caption{各指令对标志位的影响} \label{tab:ISA:flags} \\
-%   \toprule
-%   操作码低四位 & 助记符 & ZF & CF & OF & NF & MF\\
-%   \midrule
-%   \endfirsthead
-  
-%   \caption[]{（续表）各指令对标志位的影响} \\
-%   \toprule
-%   操作码低四位 & 助记符 & ZF & CF & OF & NF & MF\\
-%   \midrule
-%   \endhead
-  
-%   \midrule
-%   \multicolumn{7}{r}{续下页} \\
-%   \midrule
-%   \endfoot
-  
-%   \bottomrule
-%   \endlastfoot
-  
-%   0001 & ADD     & 为0时置1 & 0 & 溢出置1 & 负数置1 &\\
-%   0010 & SUB     & 为0时置1 & 0 & 溢出置1 & 负数置1 &\\
-%   0011 & MPY     & 为0时置1 & 0 & 0 & 负数置1 \\
-%   0100 & AND     & 为0时置1 & 0 & 0 & 负数置1 \\
-%   0101 & OR      & 为0时置1 & 0 & 0 & 负数置1 \\
-%   0110 & NOT     & 为0时置1 & 0 & 0 & 负数置1 \\
-%   0111 & SHIFTR  & 为0时置1 & 最低位 & 0 & 负数置1 \\
-%   1000 & SHIFTL  & 为0时置1 & 最高位 & 0 & 负数置1 \\
-
-% \end{longtable}
-% 放一张表
 
 \subsection{控制单元CU}
 控制单元（Control Unit, CU）负责协调和控制寄存器、ALU、内存等各个模块以实现指令的执行。它采用\textbf{微操作指令模式}设计，根据当前指令的操作码和状态寄存器的标志位生成相应的控制信号，指引数据通路中的各个寄存器、ALU、内存和外设进行正确的操作。\ref{sec:cu:structure}~节将介绍该控制单元的结构；\ref{sec:cu:micro}~节将具体描述本设计使用的微操作指令，并提供指令集的微操作指令表以供参考；\ref{sec:datapath}~节将介绍各个控制信号位的作用以及微操作指令表与控制信号的对应。
@@ -755,7 +720,7 @@ CPU与数据内存通过三条总线交互，分别为\textbf{控制总线}、\t
 
 \paragraph{运行与停止}
 
-最左侧开关控制CPU的运行状态：
+最右侧开关控制CPU的运行状态：
 \begin{itemize}
   \item 开启状态：CPU开始执行指令。
   \item 关闭状态：CPU停止运行并保持当前状态。
@@ -770,7 +735,7 @@ CPU支持两种模式：
   \item \textbf{单步调试模式}：用户通过按下最中间的按钮（BTNC）控制CPU逐条执行指令。每次执行完一条指令后，CPU暂停，等待用户操作。
 \end{itemize}
 
-最右侧开关控制模式选择：
+CPU运行开关左侧相邻开关控制模式选择：
 \begin{itemize}
   \item 开启状态：单步调试模式，左侧LED灯亮红色。
   \item 关闭状态：运行模式，左侧LED灯亮蓝色。
@@ -785,14 +750,14 @@ CPU支持两种模式：
 \end{itemize}
 \section{核心模块设计}
 \subsection{时钟、复位与停止信号}
-CPU由\textbf{全局同步时钟}控制，时钟主频为50MHz。除复位信号外，所有控制逻辑与计算逻辑全部在时钟上升沿进行。UART传输部分使用100MHz的时钟主频。
+CPU由\textbf{全局同步时钟}控制，时钟主频为100MHz。除复位信号外，所有控制逻辑与计算逻辑全部在时钟上升沿进行。
 
 CPU设有\textbf{全局异步复位}信号，低电平有效。当异步复位时，内存中除指令集数据以外所有数据清空，所有寄存器清空，控制信号全部归为断开（0）。
 
 当CPU执行07号指令HALT时，CPU处于\textbf{停止}状态。与复位不同的是，此时所有寄存器不清空，但所有通路断开。解除该状态的唯一方法是全局复位。
 
 \subsection{UART传输与指令内存}
-指令写入通过Python脚本（附录~\ref{sec:appendices:python}~）完成，其可以根据用户输出一串UART格式的比特流。用户可通过PC上的串口调试设备连接UART端口进行传输。
+指令写入通过Python脚本（附录~\ref{sec:appendices:python}~）完成，其可以根据用户输出一串UART格式的比特流。用户可通过PC上的串口调试设备连接UART端口进行传输，或复制脚本的输出作为输入测试样例。
 \paragraph{模块代码：}
 见附录~\ref{sec:appendices:uart}。
 \paragraph{功能块基本信息：}
@@ -863,14 +828,12 @@ CPU设有\textbf{全局异步复位}信号，低电平有效。当异步复位�
 
 \paragraph{模块行为：}
 \begin{itemize}
-  \item 当\texttt{i\_rst\_n}为低电平时，模块复位，状态机进入\texttt{IDLE}状态，清空接收寄存器和计数器；
-  \item 在\texttt{IDLE}状态下，若\texttt{i\_rx}信号检测到起始位（低电平），状态机进入\texttt{START}状态；
-  \item 在\texttt{START}状态下，等待一个波特率周期后进入\texttt{DATA}状态；
+  \item 当\texttt{i\_rst\_n}为低电平时，模块复位，状态机进入\texttt{START}状态，清空接收寄存器和计数器；
+  \item 在\texttt{START}状态下，若\texttt{i\_rx}信号检测到起始位（低电平），状态机在下一波特率时钟进入\texttt{DATA}状态；
   \item 在\texttt{DATA}状态下，按照波特率时钟采样8位数据，依次存入移位寄存器；
   \item 在接收完8位数据后，状态机进入\texttt{STOP}状态，检测停止位（高电平）；
-  \item 若停止位有效，输出接收到的8位数据到\texttt{o\_data}，并将\texttt{o\_valid}置高，表示数据有效；
-  \item 若在\texttt{IDLE}状态下超过0.5秒未接收到新数据，\texttt{o\_clear\_sign}置高，表示UART输入结束；
-  \item 状态机在完成当前帧的接收后返回\texttt{IDLE}状态，等待下一帧数据。
+  \item 若停止位有效，输出接收到的8位数据到\texttt{o\_data}，并将\texttt{o\_valid}置高，表示数据有效；状态机在完成当前帧的接收后返回\texttt{START}状态，等待下一帧数据。
+  \item 若在\texttt{START}状态下超过0.5秒未接收到新数据，\texttt{o\_clear\_sign}置高，表示UART输入结束；
 \end{itemize}
 \subsubsection{FIFO模块}
 \paragraph{模块基本信息：}
@@ -966,7 +929,11 @@ CPU设有\textbf{全局异步复位}信号，低电平有效。当异步复位�
   \bottomrule
 \end{longtable}
 
-
+\paragraph{模块行为：}
+\begin{itemize}
+  \item 在\texttt{en\_write} 有效时，将指令内容写入指令地址；
+  \item 在\texttt{en\_read} 有效时，将要读取的指令地址中的内容输出到连接外部总线的\texttt{o\_instr\_read}。
+\end{itemize}
 
 
 \subsection{控制单元}
@@ -1003,15 +970,17 @@ CPU设有\textbf{全局异步复位}信号，低电平有效。当异步复位�
   \texttt{control\_word}  & 输出  & 24       & 从 CM 中读取的控制信号 \\
   \bottomrule
 \end{longtable}
+\paragraph{模块行为：}
+输出\texttt{car}地址存储的\texttt{control\_word}。
 \subsubsection{CAR}
 \paragraph{模块基本信息：}
 \begin{itemize}
   \item 模块名：\texttt{CAR}
   \item 最新更新日期：\texttt{4.23}
-  \item 是否经过测试：否
+  \item 是否经过测试：是
 \end{itemize}
 \paragraph{模块功能：}
-根据CBR反馈的“下一条地址”逻辑、IR Opcode 和 ALU输出Flags，综合判断出下一条指令所在地址。
+根据控制信号中ADDR控制字、IR Opcode 和 Flags，综合判断出下一条指令所在微操作指令的地址。
 \paragraph{模块外部接口：}
 \begin{longtable}{>{\bfseries}c c c c}
   \caption{CAR模块外部接口} \\
@@ -1025,13 +994,31 @@ CPU设有\textbf{全局异步复位}信号，低电平有效。当异步复位�
   信号名 & 方向 & 位宽 & 描述 \\
   \midrule
   \endhead
-
-  \texttt{i\_clk}          & 输入  & 1        & 系统时钟信号，驱动读写操作 \\
-  \texttt{i\_rst\_n}      & 输入    & 1       & 全局复位\\
-  \texttt{i\_ctrl\_CBR}   & 输入  & 8        & 来自CBR的下一跳地址 \\
-  \texttt{o\_signal\_read}  & 输出  & 16       & 从 BRAM 中读取的指令内容 \\
+  \texttt{i\_clk}  & 输入 & 1& 时钟信号\\
+  \texttt{i\_rst\_n}  & 输入 &1 & 全局复位信号 \\
+  \texttt{ctrl\_cpu\_start}     & 输入 & 1 & 用户面控制，控制CPU启动与停止 \\
+  \texttt{ctrl\_step\_execution} & 输入 & 1 & 用户面控制，控制CPU逐条执行指令 \\
+  \texttt{i\_next\_instr\_stimulus}  & 输入 & 1 & 用户面控制，控制CPU执行下一条指令\\
+  \texttt{i\_ctrl\_halt} & 输入 & 1 & HLT控制字 \\
+  \texttt{i\_control\_word\_car} & 输入 & 2 & ADDR控制字（参照~\ref{sec:datapath}）\\
+  \texttt{i\_ir\_data}  & 输入 & 5 & IR的最高位 + IR的低四位 \\
+  \texttt{i\_ctrl\_ZF}  & 输入 & 1 & ZF值 \\
+  \texttt{i\_ctrl\_NF}  & 输入 & 1 & NF值 \\
+  \texttt{i\_ctrl\_MF}  & 输入 & 1 & MF值 \\
+  \texttt{o\_car\_data} & 输入 & 7 & 待取指令在CM中的地址 \\
   \bottomrule
 \end{longtable}
+\paragraph{模块行为：}
+\begin{itemize}
+  \item 时钟上升沿时，若\texttt{i\_ir\_data}有效，从外部更新\texttt{ir\_data}寄存器的值；
+  \item 根据\texttt{ir\_data}最高位判断是否需要IND周期，若最高位为0则置\texttt{indirect\_flag}为1，标志需要IND周期；
+  \item 根据ADDR控制字决定下一条微操作指令地址：
+  \begin{itemize}
+    \item \textbf{跳转（01）}：\texttt{indirect\_flag}为1时，将IND周期的微指令地址写入CAR，否则进入EX阶段，根据\texttt{ir\_data}低四位决定具体执行指令，并将微指令地址写入CAR；
+    \item \textbf{自增（10）}：CAR自增；
+    \item \textbf{指令结束（11）}：若HLT为1，CAR保持不变；若在单步调试功能下，CAR跳转到NOP的WB阶段，等待\texttt{i\_next\_instr\_stimulus}信号将CAR归零，否则CAR归零，自动获取下一条指令。
+  \end{itemize}
+\end{itemize}
 \subsection{内部寄存器和ALU设计}
 \subsubsection{ALU}
 ALU（Arithmetic Logic Unit）是算术逻辑单元，负责执行CPU中的算术和逻辑运算。
@@ -1565,7 +1552,7 @@ KEY\_JITTER模块支持以下功能：
 \subsubsection{LED灯显示}
 
 \section{仿真验证}
-\subsection{功能验证}
+\subsection{CPU功能验证}
 
 \subsubsection{简单加法器}
 
@@ -1580,10 +1567,108 @@ KEY\_JITTER模块支持以下功能：
 
 通过python脚本将其转换为UART接收模块可以识别的二进制流，具体转换过程见附录~\ref{sec:appendices:python}。采用115200波特率输入指令内存，当指令内存发出“传输完成”信号后，打开CPU的单步调试功能。每间隔0.1ms，向CPU发出一次“下一条指令”信号，直到CPU发出“停止”信号。
 
+这个测试样例可以测试CPU的条件跳转指令功能、加减法功能和ZF功能的正确性。
+\paragraph{仿真结果：}
+取100轮循环中的最后两个周期，观察ALU运算结果的变化如图~\ref{fig:sim:1-1}~所示。在第一轮循环中，被加数为累计的和，其值为4851，加数为99。程序首先执行$99 +4851 = 4950$。接着程序将结果存入内存地址1（累计和存放于此），然后程序将加数自增1后，加载立即数101并减去此时的加数100，得到结果大于0，ZF、NF均为0，JGZ跳转到循环开始。
+
+第二轮循环，程序累加结果为$4950+100 = 5050$，并存入内存地址1。此时，自增后的加数也为101，减法运算结果为0，ZF置1，JGZ跳转条件不满足，循环终止，程序运行到HALT后自动终止。
+
+通过LOAD指令查看内存地址1的值，可知运算结果为5050，结果正确。
+
+\begin{figure}[htbp]
+  \centering
+  \caption{简单加法器最后两次循环仿真结果}
+  \includegraphics[width = 0.75\textwidth]{figure/cpu_sim_add.png}
+  \label{fig:sim:1}
+\end{figure}
+
+
+\subsubsection{乘法与溢出验证}
+\paragraph{仿真内容：}
+
+计算$255\times254\times255$。
+
+在16位有符号数乘法中，由于$32768 < 255\times254 < 65536$，会导致符号位溢出，但不会使用高16位，计算结果应为$255 \times 254 -2 ^{16}= -766$。第二次乘255会导致使用高16位存储，计算结果应为$-766 \times 255 = -195330$，映射回32位有符号数，则为\texttt{FFFD04FE}。 
+
+
+\paragraph{激励设置：}
+
+用户首先编写源程序如下：
+\lstinputlisting[language=Assembly]{../designs/input_src/mul.txt}
+
+指令输入配置与激励设置和上测试例相同。这个测试样例可以测试CPU在乘法运算下的结果存储与置标志位行为。CPU需要合理判断引入高16位前后OF标志位的判决规则改变，以及在存在高16位时调用STOREH指令存储高位。
+
+\paragraph{仿真结果：}
+\begin{figure}[htbp]
+  \centering
+  \caption{乘法与溢出测试例仿真结果}
+  \includegraphics[width = 0.75\textwidth]{figure/cpu_sim_mul.png}
+  \label{fig:sim:2}
+\end{figure}
+
+如图~\ref{fig:sim:2}~所示，乘法运算的低位、高位结果正确地存储在内存地址3和4，表明STOREH成功触发并正确执行。使用LOAD指令查看内存地址3、4的值，可知：
+\begin{itemize}
+  \item 第一次乘法运算结果高16位为\texttt{0}，低16位为\texttt{FD02}，OF、NF置1，表明乘法溢出且结果为负；
+  \item 第二次乘法运算结果高16位为\texttt{FFFD}，低16位为\texttt{04FE}。由于乘数符号不同，乘法结果为负数，NF置1；未发生32位溢出，故OF为0。
+\end{itemize}
+\subsubsection{移位运算验证}
+\paragraph{仿真内容：}
+\begin{itemize}
+  \item \textbf{算术左右移测试：}$1 <<< 15 = 32768$，$32768 >> 10 = 32$，存入内存地址1；
+  \item \textbf{移出标志位测试：}$32 << 11 = 65536$（溢出），存入内存地址2；
+\end{itemize}
+
+
+
+\paragraph{激励设置：}
+
+用户首先编写源程序如下：
+\lstinputlisting[language=Assembly]{../designs/input_src/shift.txt}
+
+指令输入配置与激励设置和上测试例相同。这个测试样例可以测试CPU的算术左移（SHIFTL）和算术右移（SHIFTR）指令的正确性。
+
 \paragraph{仿真结果：}
 
+如图~\ref{fig:sim:3}~所示，移位运算的结果正确地存储在内存地址1和2，表明移位指令执行正确。使用LOAD指令查看内存地址1、2的值，可知：
+\begin{itemize}
+  \item 算术左移15位后，结果为\texttt{8000}（-32768），NF置1，表明最高位正确移入符号位；
+  \item 算术右移10位后，结果为\texttt{FFE0}（-32），表明符号位成功填充到移入的空位；
+  \item 再算术左移11位后，结果为\texttt{0000}（65536，最高位移出），CF置1，表明移出标志位正确赋值。
+\end{itemize}
 
+\begin{figure}[htbp]
+  \centering
+  \caption{移位运算验证仿真结果}
+  \includegraphics[width = 0.75\textwidth]{figure/cpu_sim_shift.png}
+  \label{fig:sim:3}
+\end{figure}
 
+\subsubsection{逻辑运算与无条件跳转验证}
+\paragraph{仿真内容：}
+依次完成以下操作：
+\begin{itemize}
+  \item $99 - 100 = -1 \text{(0xFFFF)}$；
+  \item $\text{0xFFFF} \,\&\, \text{0x000C} = \text{0x000C}$；
+  \item $\text{0x000C} \,\mid\, \text{0x0003} = \text{0x000F}$；
+  \item $\neg\, \text{0x000F} = \text{0xFFF0}$；
+  \item 跳过第10条指令，直接跳转到HALT指令，停止执行。
+\end{itemize}
+
+\paragraph{激励设置：}
+
+用户首先编写源程序如下：
+\lstinputlisting[language=Assembly]{../designs/input_src/logic.txt}
+
+指令输入配置与激励设置和上测试例相同。这个测试样例可以测试CPU的逻辑运算指令（AND、OR、NOT）和无条件跳转指令的正确性。
+
+\paragraph{仿真结果：}
+如图~\ref{fig:sim:4}~所示，正确的逻辑运算的结果依次显示在用户面接口中，且ADD指令并未执行，可知无条件跳转指令和逻辑指令运行正确。
+\begin{figure}[htbp]
+  \centering
+  \caption{逻辑运算与无条件跳转验证仿真结果}
+  \includegraphics[width = 0.75\textwidth]{figure/cpu_sim_logic.png}
+  \label{fig:sim:4}
+\end{figure}
 \subsection{时延分析}
 
 \subsection{激励设置}
@@ -1630,9 +1715,17 @@ KEY\_JITTER模块支持以下功能：
 
   \subsection{外部总线设计}\label{sec:appendices:externalbus}
   \lstinputlisting[language=verilog,caption={external\_bus.v}]{../designs/memory/external_bus.v}
-  \subsection{用户面设计}\label{sec:appendices:user}
-\end{appendices}
 
+  \subsection{用户面设计}\label{sec:appendices:user}
+
+  \lstinputlisting[language=verilog,caption={key\_jitter.v}]{../designs/user_interface/key_jitter.v}
+
+  \lstinputlisting[language=verilog,caption={top\_seven\_segment.v}]{../designs/user_interface/top_seven_segment.v}
+
+  \lstinputlisting[language=verilog,caption={seven\_segment.v}]{../designs/user_interface/seven_segment.v}
+
+  \lstinputlisting[language=verilog,caption={led\_display.v}]{../designs/user_interface/led_display.v}
+\end{appendices}
 \end{document}
 
 %! I felt extremely sorry to remove the whole section of Pipeline Design.
