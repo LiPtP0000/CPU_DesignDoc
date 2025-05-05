@@ -142,7 +142,8 @@ always @(posedge i_clk or negedge i_rst_n) begin
            (ctrl_alu_op == 3'b111) ? ALU_P[0]  : 1'b0;   // SHIFTR lowest bit
         OF <= (ctrl_alu_op == 3'b000) ? ((ALU_P[15] == ALU_Q[15]) && (ALU_RES_LOW[15] != ALU_P[15])) : // ADD overflow
            (ctrl_alu_op == 3'b001) ? ((ALU_P[15] != ALU_Q[15]) && (ALU_RES_LOW[15] != ALU_P[15])) : // SUB overflow
-           (ctrl_alu_op == 3'b010) ? ((ALU_P[15] == ALU_Q[15]) &&(ALU_RES_HIGH[15] != 16'b0)) : 1'b0; // MPY overflow
+           (ctrl_alu_op == 3'b010 && MR != 16'b0) ? ((ALU_P[15] == ALU_Q[15]) &&(ALU_RES_HIGH[15] != 16'b0)) :
+           (ctrl_alu_op == 3'b010 && MR == 16'b0) ? ((ALU_P[15] == ALU_Q[15]) &&(ALU_RES_LOW[15] != 16'b0)): 1'b0; // MPY overflow
         NF <= (ALU_RES_HIGH != 16'b0) ? ALU_RES_HIGH[15] : ALU_RES_LOW[15];
         MF <= (MR != 16'b0); // only for STOREH
     end
