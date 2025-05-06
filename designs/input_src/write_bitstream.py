@@ -1,6 +1,7 @@
 import re
 import serial
 import os
+import colorama
 # memonics
 MEMONICS = {
     "STORE":  0x01,
@@ -121,30 +122,27 @@ def send_to_serial(bitstream:bytearray) -> None:
     # 关闭串口
     ser.close()
 
-def main():
+def main(filename:str):
     os.chdir("./designs/input_src")
-    with open('mul.txt', 'r') as file:
+    with open(f'{filename}.txt', 'r') as file:
         lines = file.readlines()  
 
     machine_words = parse_assembly(lines)
     binary = assemble_to_bytes(machine_words)
 
     # For Reference:
-    print("Machine Code:")
+    print("033[1;34mMachine Code:\033[0m")
     for i, word in enumerate(machine_words):
         print(f"{i+1:02}: {word:04X}")
 
     # For Simulation Testbench input drive:
-    print("\nGenerated UART Send Bitstream:")
+    print("\n\033[1;34mGenerated UART Send Bitstream:\033[0m")
     for b in binary:
         bits = f"{b:08b}"          
         reversed_bits = bits[::-1]   
         print(f"uart_send_byte(8'b{reversed_bits});")
     # print(binary)
     # For FPGA Verification:
-    
-    # binary = bytearray(b ^ 0xFF for b in binary)
-    # print(binary)
     
     # Bit reverse each byte in the binary array
     bit_reversed_binary = bytearray()
@@ -160,4 +158,8 @@ def main():
     binary = bit_reversed_binary
     send_to_serial(binary)
 
-main()
+
+if __name__ == "__main__":
+    colorama.init()
+    filename = input(f"\033[1;32mPlease enter the assembly file name (without .txt): \033[0m")
+    main(filename)

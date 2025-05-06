@@ -116,9 +116,6 @@ always @(posedge i_clk or negedge i_rst_n) begin
 
     end
     // On write back, MR are set to 0
-    // else if (C9) begin
-    //     BR <= 16'b0;
-    // end
     else if (C10 && !i_user_sample) begin
         MR <= 16'b0;
     end
