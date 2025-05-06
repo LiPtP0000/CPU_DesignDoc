@@ -59,8 +59,8 @@
 \title{计算机组织与结构II：CPU设计文档}
 \author{李勃璘 \\ 吴健雄学院}
 
-\version{1.1}
-\date{\zhdate{2025/4/25}}
+\version{1.0}
+\date{\zhdate{2025/5/6}}
 
 % 本文档命令
 \usepackage{array}
@@ -116,7 +116,7 @@
 
 本文接下来的章节安排如下：
 
-第二章将介绍CPU内部架构，即指令集、内部寄存器、ALU、内外总线以及控制单元设计，第三章将主要介绍用户面的设计，包括前端输入指令、指令传入内存和结果显示功能，第四章是二、三章提出的设计方案的Verilog实现和分模块仿真结果，第五章是该设计的整体仿真结果和在NEXYS 4 DDR FPGA开发板上的测试结果。第六章对该设计进行了总结，并提出一些可改进的方向。另外，附录中还提供了设计的全部Verilog代码和项目地址。
+第二章将介绍CPU内部架构，即指令集、内部寄存器、ALU、内外总线以及控制单元设计，第三章将主要介绍CPU外部设备的设计，包括前端输入指令、指令传入内存、内存格式和结果显示功能，第四章是二、三章提出的设计方案的Verilog实现和分模块仿真结果，第五章是该设计的整体仿真结果和在NEXYS 4 DDR FPGA开发板上的测试结果。第六章对该设计进行了总结，并提出一些可改进的方向。另外，附录中还提供了设计的全部Verilog代码和项目地址。
 
 \section{CPU结构设计}
 \subsection{总体架构}
@@ -1072,8 +1072,8 @@ ALU模块支持以下功能：
   \item 当\texttt{i\_rst\_n}为低电平时，BR和MR寄存器复位为\texttt{16'b0}，Flags寄存器复位为\texttt{5'b0}；
   \item 当\texttt{ctrl\_alu\_en}信号有效时，根据\texttt{ctrl\_alu\_op}执行以下运算：
     \begin{itemize}
-      \item \texttt{000}：加法（ADD），结果存入BR；
-      \item \texttt{001}：减法（SUB），结果存入BR；
+      \item \texttt{000}：加法（ADD），结果存入BR（若高16位存在，则存入MR和BR）；
+      \item \texttt{001}：减法（SUB），结果存入BR（若高16位存在，则存入MR和BR）；
       \item \texttt{010}：乘法（MPY），低16位存入BR，高16位存入MR；
       \item \texttt{011}：按位与（AND），结果存入BR；
       \item \texttt{100}：按位或（OR），结果存入BR；
@@ -1526,7 +1526,6 @@ KEY\_JITTER模块支持以下功能：
   信号名 & 方向 & 位宽 & 描述 \\ 
   \midrule
   \endhead
-
   \texttt{i\_clk} & 输入 & 1 & 系统时钟信号 \\ 
   \texttt{key\_in} & 输入 & 1 & 原始按键输入信号 \\ 
   \texttt{key\_out} & 输出 & 1 & 消抖后的稳定按键信号 \\ 
@@ -1539,18 +1538,57 @@ KEY\_JITTER模块支持以下功能：
   \item 当检测到信号变化时，计数器\texttt{cnt\_base}清零并开始计数；
   \item 如果信号在计数器达到最大值\texttt{CNT\_MAX}之前保持稳定，则更新输出信号\texttt{key\_out}；
   \item 如果信号在计数器计满之前发生变化，则重新开始计数；
-  \item 输出信号\texttt{key\_out}仅在信号稳定后更新。
+  \item 输出信号\texttt{key\_out}仅在信号稳定后更新，根据\texttt{POSEDGE}参数决定是否仅在上升沿触发。
 \end{itemize}
 
 \paragraph{模块参数：}
 \begin{itemize}
-  \item \texttt{CNT\_MAX}：计数器的最大值，用于设置消抖时间窗口。默认值为\texttt{20'hf\_ffff}，对应较长的消抖时间。
+  \item \texttt{CNT\_MAX}：计数器的最大值，用于设置消抖时间窗口。默认值为\texttt{20'hf\_ffff}，对应较长的消抖时间。\textbf{此参数可在最上层模块自定义}。
+  \item \texttt{POSEDGE}：用于设置输出是否仅在按键上升沿触发（冲激信号）。对于开关类型的信号，POSEDGE应设置为0，以捕获持续的高电平信号；对于按钮类型的信号，POSEDGE应设置为1，以捕获按键按下的瞬时信号。
 \end{itemize}
 
 \subsubsection{七段显示器}
+\paragraph{顶层模块基本信息：}
+\begin{itemize}
+  \item 模块名：\texttt{SEVEN\_SEGMENT\_DISPLAY}
+  \item 最新更新日期：\texttt{2025.4.25}
+  \item 是否经过测试：是
+\end{itemize}
 
+\paragraph{显示模块基本信息：}
+\begin{itemize}
+  \item 模块名：\texttt{SEVEN\_SEGMENT}
+  \item 最新更新日期：\texttt{2025.4.25}
+  \item 是否经过测试：是
+\end{itemize}
+
+\paragraph{模块功能：}
+七段显示器使用两个模块实现，一个为显示编码模块，用于将数字转换为七段显示器的编码，并输出轮询信号用于更新七段显示器的显示；另外一个为顶层模块，根据用户请求将待显示的数字传入显示模块。
+
+\paragraph{模块外部接口：}
+\begin{longtable}{>{\bfseries}c c c c}
+  \caption{KEY\_JITTER模块外部接口} \\ 
+  \toprule
+  信号名 & 方向 & 位宽 & 描述 \\ 
+  \midrule
+  \endfirsthead
+
+  \multicolumn{4}{l}{\textbf{（续表）KEY\_JITTER模块外部接口}} \\ 
+  \toprule
+  信号名 & 方向 & 位宽 & 描述 \\ 
+  \midrule
+  \endhead
+  \texttt{i\_clk} & 输入 & 1 & 系统时钟信号 \\ 
+  \texttt{key\_in} & 输入 & 1 & 原始按键输入信号 \\ 
+  \texttt{key\_out} & 输出 & 1 & 消抖后的稳定按键信号 \\ 
+  \bottomrule
+\end{longtable}
 \subsubsection{LED灯显示}
 
+\subsection{时序优化}
+经由时序分析工具分析，CPU的时序路径集中在内存和CAR模块、ALU和CAR模块之间。如果发生时序违例，可能会导致数据错误或系统不稳定。为了解决这个问题，我们对时序路径进行了优化，确保在时钟周期内完成数据传输和处理。
+\paragraph{时序路径分析：}
+整个系统受CAR模块的控制，由于ALU为纯组合单元，在ALU内部的Flags寄存器还依赖ALU的组合逻辑结果，并且CAR通过控制内部总线控制内存读写，通过寄存器操作故Flags寄存器距离CAR模块的组合路径最长。在实现ZF和NF的功能时进行了组合路径优化，避免时序违例。
 \section{仿真验证}
 \subsection{CPU功能验证}
 
@@ -1569,7 +1607,7 @@ KEY\_JITTER模块支持以下功能：
 
 这个测试样例可以测试CPU的条件跳转指令功能、加减法功能和ZF功能的正确性。
 \paragraph{仿真结果：}
-取100轮循环中的最后两个周期，观察ALU运算结果的变化如图~\ref{fig:sim:1-1}~所示。在第一轮循环中，被加数为累计的和，其值为4851，加数为99。程序首先执行$99 +4851 = 4950$。接着程序将结果存入内存地址1（累计和存放于此），然后程序将加数自增1后，加载立即数101并减去此时的加数100，得到结果大于0，ZF、NF均为0，JGZ跳转到循环开始。
+取100轮循环中的最后两个周期，观察ALU运算结果的变化如图~\ref{fig:sim:1}~所示。在第一轮循环中，被加数为累计的和，其值为4851，加数为99。程序首先执行$99 +4851 = 4950$。接着程序将结果存入内存地址1（累计和存放于此），然后程序将加数自增1后，加载立即数101并减去此时的加数100，得到结果大于0，ZF、NF均为0，JGZ跳转到循环开始。
 
 第二轮循环，程序累加结果为$4950+100 = 5050$，并存入内存地址1。此时，自增后的加数也为101，减法运算结果为0，ZF置1，JGZ跳转条件不满足，循环终止，程序运行到HALT后自动终止。
 
@@ -1669,12 +1707,13 @@ KEY\_JITTER模块支持以下功能：
   \includegraphics[width = 0.75\textwidth]{figure/cpu_sim_logic.png}
   \label{fig:sim:4}
 \end{figure}
-\subsection{时延分析}
 
-\subsection{激励设置}
+\subsection{时序分析}
 
-\section{FPGA实现}
-\subsection{用户输入端}
+\subsection{FPGA实物验证}
+
+\section{总结}
+
 
 
 \nocite{FPGA-CPU}
