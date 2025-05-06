@@ -107,13 +107,9 @@ always @(posedge i_clk or negedge i_rst_n) begin
     end
     else if (ctrl_alu_en) begin
         BR <= ALU_RES_LOW;
-        if(ctrl_alu_op == 3'b010) begin
+        if(ctrl_alu_op < 3'b110) begin
             MR <= ALU_RES_HIGH;
-        end
-        else begin
-            MR <= MR;
-        end
-
+        end    
     end
     // On write back, MR are set to 0
     else if (C10 && !i_user_sample) begin
@@ -137,15 +133,15 @@ always @(posedge i_clk or negedge i_rst_n) begin
     else if (ctrl_alu_en) begin // EX
         if (ctrl_alu_op == 3'b000) begin // ADD
             OF <= MF ? ((MR[15] == ALU_P[15]) && (ALU_RES_HIGH[15] != MR[15])) :
-                       ((ALU_P[15] == ALU_Q[15]) && (ALU_RES_LOW[15] != ALU_P[15]));
+               ((ALU_P[15] == ALU_Q[15]) && (ALU_RES_LOW[15] != ALU_P[15]));
         end
         else if (ctrl_alu_op == 3'b001) begin // SUB
             OF <= MF ? ((MR[15] != ALU_P[15]) && (ALU_RES_HIGH[15] != MR[15])) :
-                       ((ALU_P[15] != ALU_Q[15]) && (ALU_RES_LOW[15] != ALU_P[15]));
+               ((ALU_P[15] != ALU_Q[15]) && (ALU_RES_LOW[15] != ALU_P[15]));
         end
         else if (ctrl_alu_op == 3'b010) begin // MPY
             OF <= MF ? ((ALU_P[15] == ALU_Q[15]) && (ALU_RES_HIGH[15] != 16'b0)) :
-                                  ((ALU_P[15] == ALU_Q[15]) && (ALU_RES_LOW[15] != 16'b0));
+               ((ALU_P[15] == ALU_Q[15]) && (ALU_RES_LOW[15] != 16'b0));
         end
         else begin
             OF <= 1'b0;
@@ -154,7 +150,7 @@ always @(posedge i_clk or negedge i_rst_n) begin
            (ctrl_alu_op == 3'b111) ? ALU_P[ALU_Q]  : 1'b0;   // SHIFTR lowest shiftout bit
     end
     else if (C9) begin  // WB
-        ZF <= ({MR,BR} == 32'b0);                                   // Wait one cycle to update ZF 
+        ZF <= ({MR,BR} == 32'b0);                                   // Wait one cycle to update ZF
         NF <= (MR != 16'b0) ? MR[15] : BR[15];
         MF <= (MR != 16'b0); // only for STOREH
     end

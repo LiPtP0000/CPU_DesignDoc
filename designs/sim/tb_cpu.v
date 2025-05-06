@@ -101,24 +101,24 @@ initial begin
     // uart_send_byte(8'b11100000);
     // uart_send_byte(8'b00000000);
     // mul.txt
-    uart_send_byte(8'b01000001);
-    uart_send_byte(8'b11111111);
-    uart_send_byte(8'b00010001);
-    uart_send_byte(8'b01111111);
-    uart_send_byte(8'b10000001);
-    uart_send_byte(8'b10000000);
-    uart_send_byte(8'b01000001);
-    uart_send_byte(8'b11111111);
-    uart_send_byte(8'b00010000);
-    uart_send_byte(8'b10000000);
-    uart_send_byte(8'b10000001);
-    uart_send_byte(8'b11000000);
-    uart_send_byte(8'b01000000);
-    uart_send_byte(8'b11000000);
-    uart_send_byte(8'b01000000);
-    uart_send_byte(8'b00100000);
-    uart_send_byte(8'b11100000);
-    uart_send_byte(8'b00000000);
+    // uart_send_byte(8'b01000001);
+    // uart_send_byte(8'b11111111);
+    // uart_send_byte(8'b00010001);
+    // uart_send_byte(8'b01111111);
+    // uart_send_byte(8'b10000001);
+    // uart_send_byte(8'b10000000);
+    // uart_send_byte(8'b01000001);
+    // uart_send_byte(8'b11111111);
+    // uart_send_byte(8'b00010000);
+    // uart_send_byte(8'b10000000);
+    // uart_send_byte(8'b10000001);
+    // uart_send_byte(8'b11000000);
+    // uart_send_byte(8'b01000000);
+    // uart_send_byte(8'b11000000);
+    // uart_send_byte(8'b01000000);
+    // uart_send_byte(8'b00100000);
+    // uart_send_byte(8'b11100000);
+    // uart_send_byte(8'b00000000);
 
     // shift.txt
     // uart_send_byte(8'b01000001);
@@ -163,6 +163,34 @@ initial begin
     // uart_send_byte(8'b10000000);
     // uart_send_byte(8'b11100000);
     // uart_send_byte(8'b00000000);
+
+    // mul_add.txt
+    uart_send_byte(8'b01000001);
+uart_send_byte(8'b00010011);
+uart_send_byte(8'b00010001);
+uart_send_byte(8'b11100000);
+uart_send_byte(8'b10000001);
+uart_send_byte(8'b00100000);
+uart_send_byte(8'b01000001);
+uart_send_byte(8'b11111111);
+uart_send_byte(8'b00010001);
+uart_send_byte(8'b01111111);
+uart_send_byte(8'b10000001);
+uart_send_byte(8'b10000000);
+uart_send_byte(8'b01000001);
+uart_send_byte(8'b11111111);
+uart_send_byte(8'b00010000);
+uart_send_byte(8'b10000000);
+uart_send_byte(8'b00100000);
+uart_send_byte(8'b00100000);
+uart_send_byte(8'b10000001);
+uart_send_byte(8'b10100000);
+uart_send_byte(8'b01000000);
+uart_send_byte(8'b10100000);
+uart_send_byte(8'b01000000);
+uart_send_byte(8'b01100000);
+uart_send_byte(8'b11100000);
+uart_send_byte(8'b00000000);
 end
 
 
