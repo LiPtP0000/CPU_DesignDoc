@@ -73,7 +73,7 @@
 \maketitle
 \thispagestyle{empty}
 \begin{abstract}
-
+  本文设计并实现了一个基于FPGA的16位单周期CPU，包括指令集架构、流水线结构和完整的硬件实现。设计采用改进型冯·诺依曼结构，将指令内存和数据内存分离，使用统一的外部总线进行交互。CPU支持13条指令，包括数据传输、算术逻辑运算、移位及跳转指令，并实现了直接寻址和立即数寻址方式。为支持用户交互，设计了基于UART的指令输入接口以及LED与七段显示器的输出接口。本文详细介绍了CPU的整体架构、内部模块设计和实现方法，并对算术、逻辑、跳转运算和溢出处理功能进行了仿真和实物验证。实验结果表明，所设计的CPU能够正确执行各类指令并完成复杂计算任务，验证了设计的有效性和可靠性。
 \end{abstract}
 
 % Removed
@@ -622,7 +622,7 @@ MAR和MBR寄存器是CPU与内存或外设的交互接口。由表~\ref{tab:CPU:
 
 \section{外围设备}
 \subsection{用户端代码解释}\label{sec:UserCode}
-目前采用\textbf{用户编写汇编代码}$\to$\textbf{转换为16位机器码}的方式输入指令。用户可在文本编辑器中编写类汇编代码，而解释器负责将其解释为机器码。
+目前采用\textbf{用户编写汇编代码}$\to$\textbf{转换为16位机器码}的方式输入指令。用户可在文本编辑器中编写类汇编代码，而编译器负责将其编译为机器码。
 
 以从1加到100的程序举例：
 \begin{lstlisting}[language=Assembly]
@@ -750,14 +750,14 @@ CPU运行开关左侧相邻开关控制模式选择：
 \end{itemize}
 \section{核心模块设计}
 \subsection{时钟、复位与停止信号}
-CPU由\textbf{全局同步时钟}控制，时钟主频为100MHz。除复位信号外，所有控制逻辑与计算逻辑全部在时钟上升沿进行。
+CPU由\textbf{全局同步时钟}控制，时钟主频为100MHz。除异步复位信号外，所有分频时钟、控制逻辑与计算逻辑全部在该时钟上升沿进行。
 
 CPU设有\textbf{全局异步复位}信号，低电平有效。当异步复位时，内存中除指令集数据以外所有数据清空，所有寄存器清空，控制信号全部归为断开（0）。
 
-当CPU执行07号指令HALT时，CPU处于\textbf{停止}状态。与复位不同的是，此时所有寄存器不清空，但所有通路断开。解除该状态的唯一方法是全局复位。
+当CPU执行07号指令HALT时，CPU处于\textbf{停止}状态，发出HLT信号。与复位不同的是，此时所有寄存器不清空，但所有通路断开。解除该状态的唯一方法是全局复位。
 
 \subsection{UART传输与指令内存}
-指令写入通过Python脚本（附录~\ref{sec:appendices:python}~）完成，其可以根据用户输出一串UART格式的比特流。用户可通过PC上的串口调试设备连接UART端口进行传输，或复制脚本的输出作为输入测试样例。
+指令写入通过Python脚本（附录~\ref{sec:appendices:python}~）完成，其可以根据用户编写的\texttt{txt}格式汇编代码（格式参照~\ref{sec:UserCode}~）输出一串UART格式的比特流。用户可在python程序中设置连接UART端口的USB端口，通过PySerial串口通信库进行传输，或复制脚本的输出作为输入测试样例。
 \paragraph{模块代码：}
 见附录~\ref{sec:appendices:uart}。
 \paragraph{功能块基本信息：}
@@ -830,7 +830,7 @@ CPU设有\textbf{全局异步复位}信号，低电平有效。当异步复位�
 \begin{itemize}
   \item 当\texttt{i\_rst\_n}为低电平时，模块复位，状态机进入\texttt{START}状态，清空接收寄存器和计数器；
   \item 在\texttt{START}状态下，若\texttt{i\_rx}信号检测到起始位（低电平），状态机在下一波特率时钟进入\texttt{DATA}状态；
-  \item 在\texttt{DATA}状态下，按照波特率时钟采样8位数据，依次存入移位寄存器；
+  \item 在\texttt{DATA}状态下，在波特率时钟\textbf{下降沿}采样数据，依次存入移位寄存器，使得其可在信号位中点采样数据，增加稳定性；
   \item 在接收完8位数据后，状态机进入\texttt{STOP}状态，检测停止位（高电平）；
   \item 若停止位有效，输出接收到的8位数据到\texttt{o\_data}，并将\texttt{o\_valid}置高，表示数据有效；状态机在完成当前帧的接收后返回\texttt{START}状态，等待下一帧数据。
   \item 若在\texttt{START}状态下超过0.5秒未接收到新数据，\texttt{o\_clear\_sign}置高，表示UART输入结束；
@@ -859,7 +859,7 @@ CPU设有\textbf{全局异步复位}信号，低电平有效。当异步复位�
   \endhead
 
   \texttt{i\_rst\_n}         & 输入  & 1        & 异步复位信号，低有效 \\
-  \texttt{i\_clk\_wr}        & 输入  & 1        & 写时钟信号，UART 使用的 100MHz 时钟 \\
+  \texttt{i\_clk\_wr}        & 输入  & 1        & 写时钟信号，UART 使用的 波特率 时钟 \\
   \texttt{i\_valid\_uart}    & 输入  & 1        & 表示当前 UART 输入数据有效 \\
   \texttt{i\_data\_uart}     & 输入  & 8        & UART 接收到的 8 位数据字节 \\
   \texttt{i\_clk\_rd}        & 输入  & 1        & 读时钟信号，使用100MHz 时钟 \\
@@ -1586,11 +1586,52 @@ KEY\_JITTER模块支持以下功能：
 \subsubsection{LED灯显示}
 
 \subsection{时序优化}
-经由时序分析工具分析，CPU的时序路径集中在内存和CAR模块、ALU和CAR模块之间。如果发生时序违例，可能会导致数据错误或系统不稳定。为了解决这个问题，我们对时序路径进行了优化，确保在时钟周期内完成数据传输和处理。
+经由时序分析工具分析，CPU的时序路径集中在ALU和CAR模块之间，尤其是NF和ZF上。如果发生时序违例，可能会导致数据错误或系统不稳定。为了解决这个问题，我们对时序路径进行了优化，确保在时钟周期内完成数据传输和处理。
+
 \paragraph{时序路径分析：}
-整个系统受CAR模块的控制，由于ALU为纯组合单元，在ALU内部的Flags寄存器还依赖ALU的组合逻辑结果，并且CAR通过控制内部总线控制内存读写，通过寄存器操作故Flags寄存器距离CAR模块的组合路径最长。在实现ZF和NF的功能时进行了组合路径优化，避免时序违例。
-\section{仿真验证}
-\subsection{CPU功能验证}
+
+整个系统由CAR模块控制，对于内存操作，CAR只需向外部总线发送控制信号，然后由外部总线转发给内存即可完成读写操作。而ALU作为纯组合逻辑单元，其内部的Flags寄存器依赖于ALU的计算结果，同时ALU的输入又取决于CAR的控制信号和内部寄存器的值。因此，从CAR到Flags寄存器的组合逻辑路径比到内存模块的路径更长。此外，ZF和NF寄存器还需要判断高16位是否为零，这引入了大量额外的组合逻辑，导致时序路径更为复杂。基于以上分析，我们需要对Flags寄存器的时序路径进行专门优化。
+
+\paragraph{时序优化方法：}
+由于某条指令产生的Flags必然不会在本指令中使用，且更新Flags的指令必然使用ALU，也就必然拥有使用ALU的EX和WB阶段，因此Flags可以使用本条指令的EX和WB阶段的时钟沿来更新。
+
+按照判决Flags所需要的输入信号类型，可以将Flags分为两类：
+\begin{itemize}
+  \item 需要\texttt{ALU\_P}和\texttt{ALU\_Q}：OF、CF；
+  \item 不需要\texttt{ALU\_P}和\texttt{ALU\_Q}：ZF、NF、MF。
+\end{itemize}
+
+对于第一类Flags，ALU的输出在EX阶段更新到Flags寄存器；对于第二类Flags，ALU的输出在WB阶段更新到Flags寄存器，它们的判决不再依赖于ALU的输出，而是依赖于寄存了ALU输出的MR、BR寄存器。这样，Flags寄存器的更新时序路径就可以分为两条，减轻了时序路径的压力。
+\begin{itemize}
+  \item ALU的输出在EX阶段更新到Flags寄存器，时序路径为：ALU $\rightarrow$ Flags（OF、CF）
+  \item ALU的输出在WB阶段更新到Flags寄存器，时序路径为：ALU $\rightarrow$ MR/BR $\rightarrow$ Flags（ZF、NF、MF）
+\end{itemize}
+
+\paragraph{时序优化结果：}
+经过上述时序优化，本设计的时序余量从原来的\texttt{0.1ns}提升至\texttt{0.5ns}，时序余量提升了\texttt{400\%}。
+\section{性能分析与验证}
+\subsection{时序分析}
+使用Vivado 2024.2进行FPGA时序分析，结果如图~\ref{fig:timing}~所示。
+\begin{figure}[htbp]
+  \centering
+  \caption{FPGA时序分析}
+  \includegraphics[width = 0.95\textwidth]{figure/timing_summary.png}
+  \label{fig:timing}
+\end{figure}
+
+设计的时序分析结果显示，在工作频率为\texttt{100MHz}时，所有路径均能在一个时钟周期内完成，这表明设计在FPGA上运行稳定，满足了设计要求。
+\subsection{资源分析}
+使用Vivado 2024.2进行FPGA资源分析，结果如图~\ref{tab:resource}~所示。
+\begin{figure}[htbp]
+  \centering
+  \caption{FPGA资源分析}
+  \includegraphics[width = 0.95\textwidth]{figure/resource_list.png}
+  \label{tab:resource}
+\end{figure}
+
+在FPGA资源利用方面，核心模块主要集中在\texttt{control\_unit}（299个LUT和13个寄存器）和\texttt{internal\_registers}（173个LUT和101个寄存器）中，反映出控制通路和数据通路寄存单元的硬件开销占比较高。数据内存\texttt{data\_ram}使用了64个LUT，指令内存\texttt{bram\_instr}使用了88个LUT，全部作为存储资源，这是因为内存容量小，无需动用更稀缺的BRAM资源。显示和控制模块如\texttt{segment\_display}和按键消抖模块占用资源较少，基本在30个LUT和25个寄存器左右，属于轻量级设计。此外，设计仅使用了1个DSP资源和30个IO引脚，未出现资源瓶颈，说明在保证功能完整的同时保持了良好的资源控制，具有进一步扩展和优化的潜力。
+
+\subsection{CPU功能仿真}
 
 \subsubsection{简单加法器}
 
@@ -1708,14 +1749,62 @@ KEY\_JITTER模块支持以下功能：
   \label{fig:sim:4}
 \end{figure}
 
-\subsection{时序分析}
 
 \subsection{FPGA实物验证}
+\subsubsection{开发环境与测试准备}
+基于Nexys 4 DDR开发板进行FPGA实物验证。该开发板使用FT2232C芯片接收来自UART引脚的串口数据，并通过同一引脚进行比特流烧录。由于本设计的CPU是基于UART接收模块接收指令，因此在测试时仅需要使用一根USB-UART转接线连接开发板和PC即可同时完成烧录和指令输入。
 
-\section{总结}
+以下是实物测试所用的开发工具和开发环境。
+\begin{itemize}
+  \item 开发工具：\texttt{Vivado 2024.2}、\texttt{Python 3.12.3}、\texttt{PySerial 3.5}
+  \item 测试环境：\texttt{Ubuntu 24.04}
+\end{itemize}
 
 
+开始测试前，首先将SD/USB跳线帽调整至USB，用于接收串口数据，然后将烧录跳线帽调整至JTAG，用于烧录比特流。完成配置后从Vivado烧录比特流，烧录完成后可看到左侧LED亮蓝灯、右侧LED亮绿色，七段数码管显示全零。这是系统的默认配置，LED灯分别代表：自动执行指令、允许接收指令。
+\subsubsection{简单加法器实物验证}
 
+\begin{figure}[htbp]
+  \centering
+  \caption{简单加法器测试}
+  \includegraphics[width = 0.55\textwidth]{figure/add_verification.pdf}
+  \label{fig:FPGA_add}
+\end{figure}
+
+\subsubsection{乘法与溢出实物验证}
+\begin{figure}[htbp]
+  \centering
+  \caption{乘法与溢出验证}
+  \includegraphics[width = 0.75\textwidth]{figure/mul_verification.pdf}
+  \label{fig:FPGA_mul}
+\end{figure}
+\subsubsection{移位运算实物验证}
+\begin{figure}[htbp]
+  \centering
+  \caption{移位运算验证}
+  \includegraphics[width = 0.75\textwidth]{figure/shift_verification.pdf}
+  \label{fig:FPGA_shift}
+\end{figure}
+
+\subsubsection{逻辑运算与无条件跳转实物验证}
+\begin{figure}[htbp]
+  \centering
+  \caption{逻辑运算与无条件跳转验证}
+  \includegraphics[width = 0.75\textwidth]{figure/logic_verification.pdf}
+  \label{fig:FPGA_logic}
+\end{figure}
+
+\section{总结与展望}
+\subsection{设计总结}
+本设计实现了一个基于FPGA的16位单周期CPU，支持基本的算术、逻辑、移位和跳转指令，并通过功能仿真、时序分析和FPGA实物验证，验证了设计的正确性和稳定性，满足了课程的设计要求。在设计要求之上，本设计还完成了一个简单的汇编代码编译器，并通过UART/FIFO串口通信实时写入用户编写的程序，无需在每次更改程序时重新构建、烧录，极大地提升了调试的灵活性。
+\subsection{已知问题}
+本设计还存在一些问题，主要问题包括：
+\begin{enumerate}
+  \item 不适合固化处理，现有设计在烧录后会直接点亮数码管和LED灯，长期点亮会造成潜在的功耗和发热问题。后续可在设计中加入开关或按键，允许用户选择是否点亮数码管和LED灯。
+  \item CPU没有异常处理机制，若发生异常（如在汇编代码无HALT指令，或未传入汇编代码时），CPU将无法正常工作。此时需要用户复位后重新传入修改过的指令。
+  \item CPU的指令集不够丰富，缺乏一些常用的指令，如除法、内存地址交换等指令。
+  \item 现有设计下，CPU只能单周期运行，无法实现多周期或流水线设计。由于本设计的CPU是基于单周期设计的，因此在指令执行时，CPU只能完成一条指令的执行，无法同时执行多条指令。
+\end{enumerate}
 \nocite{FPGA-CPU}
 \newpage
 \printbibliography
