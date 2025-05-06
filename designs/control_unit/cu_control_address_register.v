@@ -70,9 +70,6 @@ always @(posedge i_clk or negedge i_rst_n) begin
         CAR <= 7'b0;
         indirect_done <= 1'b0;
     end
-    else if (ctrl_cpu_start && !ctrl_cpu_start_reg) begin
-        CAR <= 7'b0;
-    end
     else begin
         case (i_control_word_car)
             2'b01: begin  // Jump to execution or indirect
@@ -156,6 +153,6 @@ always @(posedge i_clk or negedge i_rst_n) begin
     end
 end
 
-assign o_car_data = ctrl_cpu_start ? CAR : 7'b0;
+assign o_car_data = ctrl_cpu_start ? CAR : 7'h20;
 
 endmodule

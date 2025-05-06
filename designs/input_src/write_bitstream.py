@@ -100,7 +100,7 @@ def assemble_to_bytes(code: list[int]) -> bytearray:
 def send_to_serial(bitstream:bytearray) -> None:
     # must run on Linux system
     # FPGA Config: Baud rate = 115200, 8N1 Transmission
-    write_port = '/dev/ttyUSB0'
+    write_port = '/dev/ttyUSB1'
     ser = serial.Serial(
     port= write_port,
     baudrate= 115200,
@@ -111,9 +111,9 @@ def send_to_serial(bitstream:bytearray) -> None:
     ) 
 
     # 向 FPGA 发送数据
-    ser.write(bitstream)  # 将字符串转换为字节并发送
+    number_of_bytes = ser.write(bitstream)  # 将字符串转换为字节并发送
     # print(f"Write bit {bitstream} to serial port {write_port}\n")
-    print("Write successfully")
+    print(f"{number_of_bytes} bytes of data Write successfully")
     # # 读取来自 FPGA 的数据
     # response = ser.readline()  # 读取一行数据（假设 FPGA 发送数据是以换行符结尾）
     # print(f"Received from FPGA: {response.decode().strip()}")
@@ -123,7 +123,7 @@ def send_to_serial(bitstream:bytearray) -> None:
 
 def main():
     os.chdir("./designs/input_src")
-    with open('add_one_to_hundred.txt', 'r') as file:
+    with open('mul.txt', 'r') as file:
         lines = file.readlines()  
 
     machine_words = parse_assembly(lines)
@@ -142,6 +142,22 @@ def main():
         print(f"uart_send_byte(8'b{reversed_bits});")
     # print(binary)
     # For FPGA Verification:
+    
+    # binary = bytearray(b ^ 0xFF for b in binary)
+    # print(binary)
+    
+    # Bit reverse each byte in the binary array
+    bit_reversed_binary = bytearray()
+    for b in binary:
+        reversed_byte = 0
+        for i in range(8):
+            # Extract bit at position i and place it at position (7-i)
+            if b & (1 << i):
+                reversed_byte |= (1 << (7-i))
+        bit_reversed_binary.append(reversed_byte)
+        
+    # Use the bit-reversed binary for sending to serial
+    binary = bit_reversed_binary
     send_to_serial(binary)
 
 main()

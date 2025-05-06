@@ -66,59 +66,59 @@ end
 initial begin
     i_rx = 1; // idle state high
     #(bit_period);
-    uart_send_byte(8'b01000001);
-    uart_send_byte(8'b00000000);
-    uart_send_byte(8'b10000001);
-    uart_send_byte(8'b10000000);
-    uart_send_byte(8'b01000001);
-    uart_send_byte(8'b10000000);
-    uart_send_byte(8'b10000001);
-    uart_send_byte(8'b01000000);
-    uart_send_byte(8'b01000000);
-    uart_send_byte(8'b10000000);
-    uart_send_byte(8'b11000000);
-    uart_send_byte(8'b01000000);
-    uart_send_byte(8'b10000001);
-    uart_send_byte(8'b10000000);
-    uart_send_byte(8'b01000000);
-    uart_send_byte(8'b01000000);
-    uart_send_byte(8'b11000001);
-    uart_send_byte(8'b10000000);
-    uart_send_byte(8'b10000001);
-    uart_send_byte(8'b01000000);
-    uart_send_byte(8'b01000001);
-    uart_send_byte(8'b10100110);
-
-    uart_send_byte(8'b00100000);
-    uart_send_byte(8'b01000000);
-
-    uart_send_byte(8'b10100001);
-    uart_send_byte(8'b10100000);
-
-    uart_send_byte(8'b01000000);
-    uart_send_byte(8'b10000000);
-
-    uart_send_byte(8'b11100000);
-    uart_send_byte(8'b00000000);
-    // mul.txt
     // uart_send_byte(8'b01000001);
-    // uart_send_byte(8'b11111111);
-    // uart_send_byte(8'b00010001);
-    // uart_send_byte(8'b01111111);
+    // uart_send_byte(8'b00000000);
     // uart_send_byte(8'b10000001);
     // uart_send_byte(8'b10000000);
     // uart_send_byte(8'b01000001);
-    // uart_send_byte(8'b11111111);
-    // uart_send_byte(8'b00010000);
     // uart_send_byte(8'b10000000);
     // uart_send_byte(8'b10000001);
+    // uart_send_byte(8'b01000000);
+    // uart_send_byte(8'b01000000);
+    // uart_send_byte(8'b10000000);
     // uart_send_byte(8'b11000000);
     // uart_send_byte(8'b01000000);
-    // uart_send_byte(8'b11000000);
+    // uart_send_byte(8'b10000001);
+    // uart_send_byte(8'b10000000);
     // uart_send_byte(8'b01000000);
+    // uart_send_byte(8'b01000000);
+    // uart_send_byte(8'b11000001);
+    // uart_send_byte(8'b10000000);
+    // uart_send_byte(8'b10000001);
+    // uart_send_byte(8'b01000000);
+    // uart_send_byte(8'b01000001);
+    // uart_send_byte(8'b10100110);
+
     // uart_send_byte(8'b00100000);
+    // uart_send_byte(8'b01000000);
+
+    // uart_send_byte(8'b10100001);
+    // uart_send_byte(8'b10100000);
+
+    // uart_send_byte(8'b01000000);
+    // uart_send_byte(8'b10000000);
+
     // uart_send_byte(8'b11100000);
     // uart_send_byte(8'b00000000);
+    // mul.txt
+    uart_send_byte(8'b01000001);
+    uart_send_byte(8'b11111111);
+    uart_send_byte(8'b00010001);
+    uart_send_byte(8'b01111111);
+    uart_send_byte(8'b10000001);
+    uart_send_byte(8'b10000000);
+    uart_send_byte(8'b01000001);
+    uart_send_byte(8'b11111111);
+    uart_send_byte(8'b00010000);
+    uart_send_byte(8'b10000000);
+    uart_send_byte(8'b10000001);
+    uart_send_byte(8'b11000000);
+    uart_send_byte(8'b01000000);
+    uart_send_byte(8'b11000000);
+    uart_send_byte(8'b01000000);
+    uart_send_byte(8'b00100000);
+    uart_send_byte(8'b11100000);
+    uart_send_byte(8'b00000000);
 
     // shift.txt
     // uart_send_byte(8'b01000001);

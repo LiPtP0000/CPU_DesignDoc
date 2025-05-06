@@ -123,10 +123,10 @@ always @(posedge i_clk or negedge i_rst_n) begin
                 segment_data <= segment_data;
             end
             STATE_INSTRUCTION: begin
-                segment_data <= {16'b0, segment_current_PC, segment_current_Opcode};
+                segment_data <= {8'b0, segment_current_PC, 8'b0, segment_current_Opcode};
             end
             STATE_FLAGS: begin
-                segment_data <= {27'b0, segment_flags};
+                segment_data <= {15'b0,segment_flags[4],3'b0,segment_flags[3],3'b0,segment_flags[2],3'b0,segment_flags[1],3'b0,segment_flags[0]};
             end
             STATE_RESULT: begin
                 segment_data <= {segment_result_high, segment_result_low};

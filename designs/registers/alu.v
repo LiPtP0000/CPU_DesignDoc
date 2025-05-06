@@ -115,11 +115,11 @@ always @(posedge i_clk or negedge i_rst_n) begin
         end
 
     end
-    // On write back, BR and MR are set to 0
-    else if (C9) begin
-        BR <= 16'b0;
-    end
-    else if (C10) begin
+    // On write back, MR are set to 0
+    // else if (C9) begin
+    //     BR <= 16'b0;
+    // end
+    else if (C10 && !i_user_sample) begin
         MR <= 16'b0;
     end
     else begin
@@ -137,15 +137,17 @@ always @(posedge i_clk or negedge i_rst_n) begin
         NF <= 1'b0;
         MF <= 1'b0;
     end
-    else if (ctrl_alu_en) begin
-        ZF <= ({MR,BR} == 32'b0);                                   // Wait one cycle to update ZF
-        CF <= (ctrl_alu_op == 3'b110) ? ALU_P[15 - ALU_Q] :        // SHIFTL highest shiftout bit
-           (ctrl_alu_op == 3'b111) ? ALU_P[ALU_Q]  : 1'b0;   // SHIFTR lowest shiftout bit
+    else if (ctrl_alu_en) begin // EX
         OF <= (ctrl_alu_op == 3'b000) ? ((ALU_P[15] == ALU_Q[15]) && (ALU_RES_LOW[15] != ALU_P[15])) : // ADD overflow
            (ctrl_alu_op == 3'b001) ? ((ALU_P[15] != ALU_Q[15]) && (ALU_RES_LOW[15] != ALU_P[15])) : // SUB overflow
            (ctrl_alu_op == 3'b010 && MR != 16'b0) ? ((ALU_P[15] == ALU_Q[15]) &&(ALU_RES_HIGH[15] != 16'b0)) :
            (ctrl_alu_op == 3'b010 && MR == 16'b0) ? ((ALU_P[15] == ALU_Q[15]) &&(ALU_RES_LOW[15] != 16'b0)): 1'b0; // MPY overflow
-        NF <= (ALU_RES_HIGH != 16'b0) ? ALU_RES_HIGH[15] : ALU_RES_LOW[15];
+        CF <= (ctrl_alu_op == 3'b110) ? ALU_P[15 - ALU_Q] :        // SHIFTL highest shiftout bit
+           (ctrl_alu_op == 3'b111) ? ALU_P[ALU_Q]  : 1'b0;   // SHIFTR lowest shiftout bit
+    end
+    else if (C9) begin  // WB
+        ZF <= ({MR,BR} == 32'b0);                                   // Wait one cycle to update ZF 
+        NF <= (MR != 16'b0) ? MR[15] : BR[15];
         MF <= (MR != 16'b0); // only for STOREH
     end
     else begin

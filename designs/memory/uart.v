@@ -36,7 +36,7 @@ reg [7:0] rx_shift_reg;           // data storage
 reg clear;
 reg i_clk_uart_dly;
 wire i_clk_uart_rising = (i_clk_uart && !i_clk_uart_dly);
-
+wire i_clk_uart_falling = (!i_clk_uart && i_clk_uart_dly);
 
 always @(posedge i_clk or negedge i_rst_n) begin
     if (!i_rst_n)
@@ -51,7 +51,7 @@ always @(posedge i_clk or negedge i_rst_n) begin
         current_state <= START;
     end
     else begin
-        if(i_clk_uart_rising) begin
+        if(i_clk_uart_falling) begin
             current_state <= next_state;
         end
     end
@@ -80,7 +80,7 @@ always @(posedge i_clk or negedge i_rst_n) begin
         o_data        <= 8'd0;
     end
     else begin
-        if(i_clk_uart_rising) begin
+        if(i_clk_uart_falling) begin
             case (current_state)
                 START: begin
                     bit_counter <= 0;
@@ -112,7 +112,7 @@ always @(posedge i_clk or negedge i_rst_n) begin
         rx_no_data_counter <= 0;
     end
     else begin
-        if(i_clk_uart_rising) begin
+        if(i_clk_uart_falling) begin
             case (current_state)
                 START: begin
                     if (rx_no_data_counter == MAX_WAITING_CLK) begin

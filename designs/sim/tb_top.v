@@ -6,8 +6,8 @@ module tb_TOP;
 
 // Parameters
 parameter bit_period = 8680; // 8.68us, if timescale is 1ns
-parameter MAX_DELAY_TOLERANCE = 20'hfff;
-parameter SCAN_INTERVAL = 16'd300;
+parameter MAX_DELAY_TOLERANCE = 20'hfffff;
+parameter SCAN_INTERVAL = 16'd30000;
 // Registers
 reg clk;
 reg rst_n;
