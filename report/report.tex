@@ -1764,6 +1764,7 @@ KEY\_JITTER模块支持以下功能：
 开始测试前，首先将SD/USB跳线帽调整至USB，用于接收串口数据，然后将烧录跳线帽调整至JTAG，用于烧录比特流。完成配置后从Vivado烧录比特流，烧录完成后可看到左侧LED亮蓝灯、右侧LED亮绿色，七段数码管显示全零。这是系统的默认配置，LED灯分别代表：自动执行指令、允许接收指令。
 \subsubsection{简单加法器实物验证}
 
+在这一轮测试中，CPU采用\textbf{自动模式}执行指令，左侧LED亮起蓝灯，如图~\ref{fig:FPGA_add}~所示。左上图显示：加载指令完成后指令内存的最大地址为15，即共存入15条指令。将最右侧开关打开后，CPU开始自动执行指令直到停止。CPU停止运行后，右侧LED亮起红灯，按下左侧按钮，七段数码管显示CPU运算结果值为\texttt{0x13BA}（5050），表明CPU成功执行了加法器测试程序。再按下下侧按钮，七段数码管显示ZF为1，代表最后一轮减法的值为0，ZF置1，JGZ跳转条件不满足，CPU停止执行。最后按下右侧按钮，从左至右第三、四个数码管显示下一条指令的PC值和当前指令的Opcode，分别为\texttt{0x10}和\texttt{0x07}，表明CPU成功停止在指令地址为\textbf{15}的\textbf{HALT}指令。
 \begin{figure}[htbp]
   \centering
   \caption{简单加法器测试}
@@ -1772,13 +1773,20 @@ KEY\_JITTER模块支持以下功能：
 \end{figure}
 
 \subsubsection{乘法与溢出实物验证}
+
+在这一轮测试中，CPU采用\textbf{单步调试模式}执行指令，左侧LED亮起红灯。此轮仿真共计9条指令，全流程如图~\ref{fig:FPGA_mul}~所示。加载指令完成后指令内存的最大地址为9，即共存入9条指令。将最右侧开关打开后，CPU开始单步调试执行指令。
+
+执行完第一条乘法指令后，按下左侧按钮显示结果为\texttt{0xFD02}，按下下侧按钮可见NF和OF均为1，表明乘法结果为负且发生溢出。按下中间按钮执行第二次乘法后，查看结果显示为\texttt{0xFFFD04FE}，标志位显示MF和NF均为1，这与仿真结果一致。继续按下中间按钮存储乘法结果，观察到MF标志位清零，证明乘法高位已被存入内存且MR寄存器已重置。执行LOAD 3指令后，七段数码管成功显示乘法结果低位\texttt{0x04FE}；执行LOAD 4指令后，显示高位\texttt{0xFFFD}，验证了CPU正确运算存储32位乘法结果、处理溢出的能力。
 \begin{figure}[htbp]
   \centering
   \caption{乘法与溢出验证}
   \includegraphics[width = 0.75\textwidth]{figure/mul_verification.pdf}
   \label{fig:FPGA_mul}
 \end{figure}
+
 \subsubsection{移位运算实物验证}
+
+在这一轮测试中，CPU采用\textbf{单步调试模式}执行指令，左侧LED亮起红灯，全流程如图~\ref{fig:FPGA_shift}~所示。第一条指令执行完成后，查看运算结果可知为1。先对其左移15位，依次按下中间、左侧按钮查看结果，显示为\texttt{0x8000}，NF置1，表明最高位正确移入符号位。接着按下中间按钮执行右移10位，查看运算结果可知为\texttt{0xFFE0}，NF置1，表明符号位成功填充到移入的空位。最后按下中间按钮执行左移11位，查看运算结果可知为\texttt{0x0000}（65536），CF、ZF置1，表明移出标志位正确赋值。
 \begin{figure}[htbp]
   \centering
   \caption{移位运算验证}
@@ -1787,6 +1795,8 @@ KEY\_JITTER模块支持以下功能：
 \end{figure}
 
 \subsubsection{逻辑运算与无条件跳转实物验证}
+
+在这一轮测试中，CPU采用\textbf{单步调试模式}执行指令，左侧LED亮起红灯，全流程如图~\ref{fig:FPGA_logic}~所示。第一条指令执行完成后，查看运算结果可知为\texttt{0xFFFF}，按下左侧按钮查看ZF和NF均为1，表明减法结果为负且发生溢出。接着按下中间按钮执行逻辑与、或、非操作，依次查看运算结果可知为\texttt{0x000C}、\texttt{0x000F}、\texttt{0xFFF0}，NF置1，表明逻辑运算结果正确。最后按下中间按钮执行无条件跳转指令，CPU成功跳过ADD指令，停止在HALT指令（由于CPU停止时运算结果仍为\texttt{0xFFF0}）。
 \begin{figure}[htbp]
   \centering
   \caption{逻辑运算与无条件跳转验证}
