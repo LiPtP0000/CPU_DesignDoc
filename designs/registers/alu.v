@@ -60,7 +60,7 @@ always @(*) begin
     case (ctrl_alu_op)
         3'b000: begin // ADD
             if(MF) begin
-                {ALU_RES_HIGH, ALU_RES_LOW} = {16'b0, ALU_P} + {16'b0, ALU_Q};
+                {ALU_RES_HIGH, ALU_RES_LOW} = {MR, ALU_P} + {16'b0, ALU_Q};
             end
             else begin
                 ALU_RES_LOW = ALU_P + ALU_Q;
@@ -68,7 +68,7 @@ always @(*) begin
         end
         3'b001: begin // SUB
             if(MF) begin
-                {ALU_RES_HIGH, ALU_RES_LOW} = {16'b0, ALU_P} - {16'b0, ALU_Q};
+                {ALU_RES_HIGH, ALU_RES_LOW} = {MR, ALU_P} - {16'b0, ALU_Q};
             end
             else begin
                 ALU_RES_LOW = ALU_P - ALU_Q;
@@ -135,10 +135,21 @@ always @(posedge i_clk or negedge i_rst_n) begin
         MF <= 1'b0;
     end
     else if (ctrl_alu_en) begin // EX
-        OF <= (ctrl_alu_op == 3'b000) ? ((ALU_P[15] == ALU_Q[15]) && (ALU_RES_LOW[15] != ALU_P[15])) : // ADD overflow
-           (ctrl_alu_op == 3'b001) ? ((ALU_P[15] != ALU_Q[15]) && (ALU_RES_LOW[15] != ALU_P[15])) : // SUB overflow
-           (ctrl_alu_op == 3'b010 && MR != 16'b0) ? ((ALU_P[15] == ALU_Q[15]) &&(ALU_RES_HIGH[15] != 16'b0)) :
-           (ctrl_alu_op == 3'b010 && MR == 16'b0) ? ((ALU_P[15] == ALU_Q[15]) &&(ALU_RES_LOW[15] != 16'b0)): 1'b0; // MPY overflow
+        if (ctrl_alu_op == 3'b000) begin // ADD
+            OF <= MF ? ((MR[15] == ALU_P[15]) && (ALU_RES_HIGH[15] != MR[15])) :
+                       ((ALU_P[15] == ALU_Q[15]) && (ALU_RES_LOW[15] != ALU_P[15]));
+        end
+        else if (ctrl_alu_op == 3'b001) begin // SUB
+            OF <= MF ? ((MR[15] != ALU_P[15]) && (ALU_RES_HIGH[15] != MR[15])) :
+                       ((ALU_P[15] != ALU_Q[15]) && (ALU_RES_LOW[15] != ALU_P[15]));
+        end
+        else if (ctrl_alu_op == 3'b010) begin // MPY
+            OF <= MF ? ((ALU_P[15] == ALU_Q[15]) && (ALU_RES_HIGH[15] != 16'b0)) :
+                                  ((ALU_P[15] == ALU_Q[15]) && (ALU_RES_LOW[15] != 16'b0));
+        end
+        else begin
+            OF <= 1'b0;
+        end
         CF <= (ctrl_alu_op == 3'b110) ? ALU_P[15 - ALU_Q] :        // SHIFTL highest shiftout bit
            (ctrl_alu_op == 3'b111) ? ALU_P[ALU_Q]  : 1'b0;   // SHIFTR lowest shiftout bit
     end
