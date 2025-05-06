@@ -35,7 +35,6 @@ always @(posedge i_clk) begin
             cnt_base <= cnt_base + 1'b1;
         end
         else if (cnt_base == CNT_MAX) begin
-            key_value_r <= key_in_r[0];
             cnt_base <= 20'b0;
         end
     end
@@ -45,6 +44,12 @@ always @(posedge i_clk) begin
     end
 end
 
+// Prevent Synthesis from optimizing out the register
+always @(posedge i_clk) begin 
+    if (cnt_base == CNT_MAX) begin
+        key_value_r <= key_in_r[0];  
+    end
+end
 
 always @(posedge i_clk) begin
     key_value_rd <= key_value_r;

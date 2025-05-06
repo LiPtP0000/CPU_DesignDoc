@@ -5,6 +5,7 @@ function:
 1. update BR and MR registers on rising clock edge when `ctrl_alu_en` is open;
 2. Bus control using C9, C10, the target port is o_br and o_mr;
 3. Operation encoding is defined in doc.
+4. Currently, this ALU is the optimal design within all tried methods.
 */
 module ALU (
            i_clk,
@@ -126,9 +127,6 @@ always @(posedge i_clk or negedge i_rst_n) begin
         MR <= MR;
     end
 end
-// Prevent timing violations
-wire zero_low = (ALU_RES_LOW == 16'b0);
-wire zero_high = (ALU_RES_HIGH == 16'b0);
 
 // Sequential logic: Update Flags upon ctrl_alu_en
 always @(posedge i_clk or negedge i_rst_n) begin
@@ -140,7 +138,7 @@ always @(posedge i_clk or negedge i_rst_n) begin
         MF <= 1'b0;
     end
     else if (ctrl_alu_en) begin
-        ZF <= zero_high && zero_low;
+        ZF <= ({MR,BR} == 32'b0);                                   // Wait one cycle to update ZF
         CF <= (ctrl_alu_op == 3'b110) ? ALU_P[15 - ALU_Q] :        // SHIFTL highest shiftout bit
            (ctrl_alu_op == 3'b111) ? ALU_P[ALU_Q]  : 1'b0;   // SHIFTR lowest shiftout bit
         OF <= (ctrl_alu_op == 3'b000) ? ((ALU_P[15] == ALU_Q[15]) && (ALU_RES_LOW[15] != ALU_P[15])) : // ADD overflow

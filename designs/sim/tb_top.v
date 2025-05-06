@@ -89,7 +89,8 @@ end
 task cpu_start_task;
     begin
         cpu_start = 0;
-        step_execution = 1;         // Edit step execution switch here
+        step_execution = 0;
+        #10 step_execution = 1;         // Edit step execution switch here
         wait(RGB2_GREEN);
         #1000 cpu_start = 1;
     end
@@ -103,7 +104,7 @@ task execute_instructions;
         sample_flags = 0;
         next_instr = 0;
         // Wait for CPU to start
-        wait(cpu_start == 1);
+        wait(RGB2_BLUE);
         repeat (10) @(posedge clk);
         while (!RGB2_RED) begin
             #10 sample_result = 1;

@@ -36,17 +36,6 @@ wire clear_uart;
 wire clear_fifo;
 
 
-wire clk = i_clk;
-
-// CLK_DIVIDER #(
-//                 .DIVIDE_BY(2)
-//             )
-//             instr_load_clk_divide
-//             (
-//                 .i_clk(i_clk),
-//                 .i_rst_n_sync(i_rst_n),
-//                 .o_clk_div(clk)
-//             );
 
 CLK_DIVIDER #(
                 .DIVIDE_BY(CLK_DIV)
@@ -59,6 +48,7 @@ CLK_DIVIDER #(
             );
 
 UART instr_load_uart (
+         .i_clk(i_clk),
          .i_clk_uart(i_clk_uart),
          .i_rst_n(i_rst_n),
          .i_rx(i_rx),
@@ -72,7 +62,7 @@ FIFO instr_load_fifo (
          .i_clk_wr(i_clk_uart),
          .i_valid_uart(valid_uart),
          .i_data_uart(data_uart),
-         .i_clk_rd(clk),
+         .i_clk_rd(i_clk),
          .o_data_bram(data_bram),
          .o_addr_bram(addr_bram),
          .o_wr_en_bram(enable_write_bram),
@@ -80,7 +70,7 @@ FIFO instr_load_fifo (
      );
 
 BRAM_INSTR instr_load_bram (
-               .i_clk(clk),
+               .i_clk(i_clk),
                .en_write(enable_write_bram),
                .en_read(en_read),
                .i_addr_write(addr_bram),

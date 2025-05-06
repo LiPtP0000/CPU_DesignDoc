@@ -1,6 +1,8 @@
 `timescale 1ns / 1ps
 // 5.5 Update: adapt 8N1 format
+// 5.6 Update: always module driven by i_clk rather than i_clk_uart
 module UART (
+           i_clk,
            i_clk_uart,
            i_rst_n,
            i_rx,
@@ -8,6 +10,7 @@ module UART (
            o_valid,
            o_clear_sign
        );
+input  wire       i_clk;
 input  wire       i_clk_uart;
 input  wire       i_rst_n;
 input  wire       i_rx;
@@ -31,16 +34,30 @@ reg [25:0] rx_no_data_counter;    // time-out counter
 reg [7:0] rx_shift_reg;           // data storage
 
 reg clear;
+reg i_clk_uart_dly;
+wire i_clk_uart_rising = (i_clk_uart && !i_clk_uart_dly);
 
-// data storage update
-always @(posedge i_clk_uart or negedge i_rst_n) begin
+
+always @(posedge i_clk or negedge i_rst_n) begin
     if (!i_rst_n)
-        current_state <= START;
+        i_clk_uart_dly <= 0;
     else
-        current_state <= next_state;
+        i_clk_uart_dly <= i_clk_uart;
 end
 
-// 状态转移逻辑
+// data storage update
+always @(posedge i_clk or negedge i_rst_n) begin
+    if (!i_rst_n) begin
+        current_state <= START;
+    end
+    else begin
+        if(i_clk_uart_rising) begin
+            current_state <= next_state;
+        end
+    end
+end
+
+// State Shift
 always @(*) begin
     case (current_state)
         START:
@@ -55,7 +72,7 @@ always @(*) begin
 end
 
 // 数据接收与控制逻辑
-always @(posedge i_clk_uart or negedge i_rst_n) begin
+always @(posedge i_clk or negedge i_rst_n) begin
     if (!i_rst_n) begin
         bit_counter   <= 0;
         rx_shift_reg  <= 8'd0;
@@ -63,51 +80,55 @@ always @(posedge i_clk_uart or negedge i_rst_n) begin
         o_data        <= 8'd0;
     end
     else begin
-        case (current_state)
-            START: begin
-                bit_counter <= 0;
-                o_valid <= 0;
-                rx_shift_reg <= 0;
-            end
-            DATA: begin
-                // LSB first
-                rx_shift_reg <= {rx_shift_reg[6:0],i_rx};
-                bit_counter <= bit_counter + 1;
-            end
-            STOP: begin
-                o_data  <= rx_shift_reg;
-                o_valid <= 1'b1;
+        if(i_clk_uart_rising) begin
+            case (current_state)
+                START: begin
+                    bit_counter <= 0;
+                    o_valid <= 0;
+                    rx_shift_reg <= 0;
+                end
+                DATA: begin
+                    // LSB first
+                    rx_shift_reg <= {rx_shift_reg[6:0],i_rx};
+                    bit_counter <= bit_counter + 1;
+                end
+                STOP: begin
+                    o_data  <= rx_shift_reg;
+                    o_valid <= 1'b1;
 
-            end
-            default: begin
-                o_valid <= 0;
-            end
-        endcase
+                end
+                default: begin
+                    o_valid <= 0;
+                end
+            endcase
+        end
     end
 end
 
 // Time-out detect
-always @(posedge i_clk_uart or negedge i_rst_n) begin
+always @(posedge i_clk or negedge i_rst_n) begin
     if (!i_rst_n) begin
         clear <= 0;
         rx_no_data_counter <= 0;
     end
     else begin
-        case (current_state)
-            START: begin
-                if (rx_no_data_counter == MAX_WAITING_CLK) begin
+        if(i_clk_uart_rising) begin
+            case (current_state)
+                START: begin
+                    if (rx_no_data_counter == MAX_WAITING_CLK) begin
+                        rx_no_data_counter <= 0;
+                        clear <= 1;
+                    end
+                    else begin
+                        rx_no_data_counter <= rx_no_data_counter + 1;
+                    end
+                end
+                default: begin
+                    clear <= 0;
                     rx_no_data_counter <= 0;
-                    clear <= 1;
                 end
-                else begin
-                    rx_no_data_counter <= rx_no_data_counter + 1;
-                end
-            end
-            default: begin
-                clear <= 0;
-                rx_no_data_counter <= 0;
-            end
-        endcase
+            endcase
+        end
     end
 end
 
