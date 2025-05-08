@@ -99,9 +99,8 @@ def assemble_to_bytes(code: list[int]) -> bytearray:
     return result
 
 def send_to_serial(bitstream:bytearray) -> None:
-    # must run on Linux system
     # FPGA Config: Baud rate = 115200, 8N1 Transmission
-    write_port = '/dev/ttyUSB1'
+    write_port = '/dev/ttyUSB1'     # Default port
     ser = serial.Serial(
     port= write_port,
     baudrate= 115200,
@@ -113,25 +112,25 @@ def send_to_serial(bitstream:bytearray) -> None:
 
     # 向 FPGA 发送数据
     number_of_bytes = ser.write(bitstream)  # 将字符串转换为字节并发送
-    # print(f"Write bit {bitstream} to serial port {write_port}\n")
     print(f"{number_of_bytes} bytes of data Write successfully")
-    # # 读取来自 FPGA 的数据
-    # response = ser.readline()  # 读取一行数据（假设 FPGA 发送数据是以换行符结尾）
-    # print(f"Received from FPGA: {response.decode().strip()}")
 
     # 关闭串口
     ser.close()
 
 def main(filename:str):
     os.chdir("./designs/input_src")
-    with open(f'{filename}.txt', 'r') as file:
-        lines = file.readlines()  
+    file_path = f"{filename}.txt"
+    if not os.path.exists(file_path):
+        raise ValueError("Cannot find such file.")
+    else:
+        with open(file_path, 'r') as file:
+            lines = file.readlines()  
 
     machine_words = parse_assembly(lines)
     binary = assemble_to_bytes(machine_words)
 
     # For Reference:
-    print("033[1;34mMachine Code:\033[0m")
+    print("\033[1;34mMachine Code:\033[0m")
     for i, word in enumerate(machine_words):
         print(f"{i+1:02}: {word:04X}")
 
