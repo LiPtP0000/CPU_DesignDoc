@@ -59,7 +59,13 @@
 }
 % \renewcommand{\refname}{参考文献}
 \title{计算机组织与结构II：CPU设计文档}
-\author{李勃璘 \\ 吴健雄学院}
+\author{
+  李勃璘\thanks{东南大学吴健雄学院，学号：61522529} \and
+  冯光宇\thanks{东南大学吴健雄学院，学号：61522527} \and
+  张凯超\thanks{东南大学吴健雄学院，学号：61522522}
+}
+
+% \institute{吴健雄学院}
 
 \version{1.0}
 \date{\zhdate{2025/5/8}}
@@ -204,7 +210,7 @@ CPU由控制单元（CU），内部寄存器（Registers）算术逻辑单元（
   \endlastfoot
   
   STORE X &  0001   & 结果存入\textbf{数据地址}X \\
-  LOAD X  & 0010    & 加载\textbf{数据地址}X \\
+  LOAD X  & 0010    & 加载\textbf{数据（数据地址）}X \\
   ADD X   & 0011    & 定点数加法\\
   SUB X   & 0100  & 定点数减法\\
   JGZ X   & 0101    & 结果 > 0时跳转至\textbf{指令地址}X\\
@@ -247,7 +253,7 @@ CPU由控制单元（CU），内部寄存器（Registers）算术逻辑单元（
   直接寻址 &  地址字段为存放操作数的地址    & 0\\
 \end{longtable}
 
-在实际编程中，默认所有指令为\textbf{直接寻址}，除非指令中通过标注“IMMEDIATE”明确指定为立即数寻址。详细说明见第~\ref{sec:UserCode}~节。
+在实际编程中，默认所有指令为\textbf{直接寻址}，除非指令中通过标注“IMMEDIATE”明确指定为立即数寻址\footnote{STORE、JGZ、JMP指令IMMEDIATE关键字无效，仅支持直接寻址。}。详细说明见第~\ref{sec:UserCode}~节。
 \subsection{CPU内部寄存器}
 该部分描述CPU内部寄存器的含义、存储格式和数据被解释为的格式。这些寄存器通过CPU的内部数据通路相连接。寄存器操作是CPU快速操作的核心。
 
@@ -697,18 +703,18 @@ CPU和指令内存也通过相同的三条外部总线交互，并由控制总�
 以从1加到100的程序举例：
 \begin{lstlisting}[language=Assembly]
   LOAD IMMEDIATE 0
-  STORE IMMEDIATE 1
+  STORE 1
   LOAD IMMEDIATE 1
-  STORE IMMEDIATE 2
+  STORE 2
   LOOP: LOAD 1
   ADD 2
-  STORE IMMEDIATE 1
+  STORE 1
   LOAD 2
   ADD IMMEDIATE 1
-  STORE IMMEDIATE 2
+  STORE 2
   LOAD IMMEDIATE 101
   SUB 2
-  JGZ IMMEDIATE LOOP
+  JGZ LOOP
   LOAD 1
   HALT                ; Expected 5050
 \end{lstlisting}
@@ -716,7 +722,7 @@ CPU和指令内存也通过相同的三条外部总线交互，并由控制总�
 代码最终将被解释为一串二进制比特流，解释服从：
 \begin{itemize}
   \item 地址占1byte，Opcode占1byte；
-  \item 含IMMEDIATE关键字的行，Opcode的MSB为1；
+  \item 含IMMEDIATE关键字的行，或STORE、JMP、JGZ指令的Opcode的MSB为1；
   \item 第一条指令的地址为1，依次递增;
   \item 在汇编代码编译的过程中，标签（\texttt{LOOP}）应映射到相同行指令的地址；
   \item 一行内分号后的内容为注释，编译器会忽略它。
@@ -762,7 +768,7 @@ CPU和指令内存也通过相同的三条外部总线交互，并由控制总�
   \text{CLK\_FRAME} = 10 \times \text{CLK\_BAUD} = 10 \times 868 = 8680\ \text{cycles}
 \end{equation}
 
-接收端在每位开始时执行采样，认为超过0.5秒RX端仍无新数据填入时，指令传输完成。CPU会向用户发出提示，指示接收完成。
+接收端在每位中间进行采样，保证采样数据稳定，并认为超过0.5秒RX端仍无新数据填入时（保持高电平），指令传输完成。CPU会向用户发出提示，指示接收完成。
 
 \subsubsection{FIFO数据缓冲与存储结构}
 
@@ -771,18 +777,12 @@ CPU和指令内存也通过相同的三条外部总线交互，并由控制总�
 \paragraph{数据写入格式：}
 
 \begin{itemize}
+  \item 可确保 FIFO 中每帧数据均为 16 位数据，不会出现奇数字节的数据包；
+  \item 指令内存地址从地址 1 开始顺序写入。
   \item 指令内存的每个地址对应两个字节（16 位）数据；
   \item 高字节为操作码（Opcode），低字节为立即数或地址（Operand）；
-  \item 若当前行含有 \texttt{IMMEDIATE} 关键字，则 Opcode 的最高位（MSB）为 $1$。
 \end{itemize}
 
-\paragraph{写入控制规则：}
-
-\begin{itemize}
-  \item 每一条指令都为2byte指令，对于没有操作数的情况（HALT、JMP），将操作数位置补零。
-  \item 指令内存地址从地址 1 开始顺序写入。
-  \item 程序中如含有 \texttt{LOOP} 标签，将在指令内存地址分配完毕后由python程序在解析阶段回填其地址位置。
-\end{itemize}
 
 
 \subsection{板载交互设备配置}\label{sec:interaction}

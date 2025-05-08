@@ -63,8 +63,11 @@ def parse_assembly(lines):
         else:
             if len(tokens) < 2:
                 raise ValueError(f"Missing operand in line: {line}")
-
-            if tokens[1] == "IMMEDIATE":
+            # Force MSB=1 for STORE instruction
+            if instr in  ["STORE","JGZ","JMP"]:
+                immediate = True
+                opcode = MEMONICS[instr] | 0x80  # MSB = 1
+            elif tokens[1] == "IMMEDIATE":
                 immediate = True
                 operand_str = tokens[2]
                 opcode = MEMONICS[instr] | 0x80  # MSB = 1
